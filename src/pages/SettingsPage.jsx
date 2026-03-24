@@ -65,7 +65,6 @@ const SettingsPage = () => {
 
         <div style={{ flex: 1 }}>
           <SidebarItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" />
-          <SidebarItem icon={Map} label="Map" to="/map" />
           <SidebarItem icon={History} label="History" to="/history" />
           <SidebarItem icon={Bell} label="Alerts" to="/alerts" />
         </div>

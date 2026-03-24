@@ -80,17 +80,20 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
 
   const resetDashboard = () => {
     setWeatherData(null);
     setForecastData([]);
     setSearchTerm('');
+    setSelectedDayIndex(null);
     setLoading(false);
   };
 
   const fetchWeatherData = async (city) => {
     setLoading(true);
     setError(null);
+    setSelectedDayIndex(null);
     try {
       // Fetch Current Weather
       const currentRes = await fetch(
@@ -119,6 +122,7 @@ const Dashboard = () => {
   const fetchWeatherByCoords = async (lat, lon) => {
     setLoading(true);
     setError(null);
+    setSelectedDayIndex(null);
     try {
       // Fetch Current Weather by Coords
       const currentRes = await fetch(
@@ -186,6 +190,24 @@ const Dashboard = () => {
     return Sun;
   };
 
+  const displayData = selectedDayIndex !== null && forecastData[selectedDayIndex]
+    ? {
+        ...weatherData,
+        main: {
+           ...weatherData.main,
+           temp: forecastData[selectedDayIndex].main.temp,
+           temp_max: forecastData[selectedDayIndex].main.temp_max,
+           temp_min: forecastData[selectedDayIndex].main.temp_min,
+           humidity: forecastData[selectedDayIndex].main.humidity,
+           pressure: forecastData[selectedDayIndex].main.pressure,
+        },
+        weather: forecastData[selectedDayIndex].weather,
+        wind: forecastData[selectedDayIndex].wind,
+        visibility: forecastData[selectedDayIndex].visibility || weatherData?.visibility,
+        isForecast: true,
+      }
+    : weatherData;
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -223,9 +245,8 @@ const Dashboard = () => {
             active={location.pathname === '/dashboard'} 
             onClick={resetDashboard}
           />
-          <SidebarItem icon={Map} label="Map" to="/map" />
           <SidebarItem icon={HistoryIcon} label="History" to="/history" />
-          <SidebarItem icon={PieChart} label="Insights" />
+          <SidebarItem icon={PieChart} label="Alerts" />
         </div>
 
         <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -275,7 +296,7 @@ const Dashboard = () => {
               <Search size={18} style={{ marginLeft: '1.5rem', color: '#64748b' }} />
               <input 
                 type="text" 
-                placeholder="Search city name..."
+                placeholder="Search city, street, area, or zip..."
                 onKeyDown={handleSearch}
                 style={{
                   flex: 1,
@@ -347,9 +368,9 @@ const Dashboard = () => {
                 >
                   <Loader2 className="animate-spin" size={48} color="#a78bfa" />
                 </motion.div>
-              ) : weatherData ? (
+              ) : displayData ? (
                 <motion.div 
-                   key={weatherData.name}
+                   key={displayData.name}
                    initial={{ opacity: 0, y: 20 }}
                    animate={{ opacity: 1, y: 0 }}
                    className="glass" 
@@ -360,29 +381,29 @@ const Dashboard = () => {
                    }}
                 >
                   <div style={{ display: 'flex', gap: '0.5rem', color: '#3b82f6', fontSize: '0.75rem', fontWeight: '700', marginBottom: '1rem', letterSpacing: '1px' }}>
-                    <MapPin size={14} /> {weatherData.name.toUpperCase()}
+                    <MapPin size={14} /> {displayData.name.toUpperCase()}
                   </div>
-                  <h2 style={{ fontSize: '4.5rem', fontWeight: '700', fontFamily: 'Outfit', marginBottom: '0.5rem' }}>{weatherData.name}</h2>
+                  <h2 style={{ fontSize: '4.5rem', fontWeight: '700', fontFamily: 'Outfit', marginBottom: '0.5rem' }}>{displayData.name}</h2>
                   <p style={{ fontSize: '1.25rem', color: '#94a3b8', fontWeight: '500' }}>
-                    {weatherData.weather[0].main} & {weatherData.weather[0].description}
+                    {displayData.weather[0].main} & {displayData.weather[0].description}
                   </p>
                   
                   <div style={{ position: 'absolute', right: '3rem', top: '50%', transform: 'translateY(-50%)' }}>
                     <div style={{ fontSize: '8rem', fontWeight: '700', fontFamily: 'Outfit', lineHeight: 1 }}>
-                      {Math.round(weatherData.main.temp)}°
+                      {Math.round(displayData.main.temp)}°
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                      <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>↑ {Math.round(weatherData.main.temp_max)}°</div>
-                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>↓ {Math.round(weatherData.main.temp_min)}°</div>
+                      <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>↑ {Math.round(displayData.main.temp_max)}°</div>
+                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>↓ {Math.round(displayData.main.temp_min)}°</div>
                     </div>
                   </div>
 
                   {/* Stat Grid */}
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '4rem' }}>
-                    <StatCard icon={Wind} label="Wind Speed" value={weatherData.wind.speed} unit="km/h" color="#3b82f6" />
-                    <StatCard icon={Droplets} label="Humidity" value={weatherData.main.humidity} unit="%" color="#60a5fa" />
-                    <StatCard icon={Compass} label="Pressure" value={weatherData.main.pressure} unit="hPa" color="#f472b6" />
-                    <StatCard icon={Eye} label="Visibility" value={(weatherData.visibility / 1000).toFixed(1)} unit="km" color="#a78bfa" />
+                    <StatCard icon={Wind} label="Wind Speed" value={displayData.wind.speed} unit="km/h" color="#3b82f6" />
+                    <StatCard icon={Droplets} label="Humidity" value={displayData.main.humidity} unit="%" color="#60a5fa" />
+                    <StatCard icon={Compass} label="Pressure" value={displayData.main.pressure} unit="hPa" color="#f472b6" />
+                    <StatCard icon={Eye} label="Visibility" value={displayData.visibility ? (displayData.visibility / 1000).toFixed(1) : "N/A"} unit={displayData.visibility ? "km" : ""} color="#a78bfa" />
                   </div>
                 </motion.div>
               ) : (
@@ -409,16 +430,30 @@ const Dashboard = () => {
                 {forecastData.map((item, i) => {
                   const date = new Date(item.dt * 1000);
                   const Icon = getWeatherIcon(item.weather[0].main);
+                  const isSelected = selectedDayIndex === i;
                   return (
-                    <div key={item.dt} className="glass" style={{ flex: 1, padding: '1.5rem', textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)' }}>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '1rem' }}>
-                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                    <div 
+                      key={item.dt} 
+                      onClick={() => setSelectedDayIndex(isSelected ? null : i)}
+                      className="glass" 
+                      style={{ 
+                        flex: 1, 
+                        padding: '1.5rem', 
+                        textAlign: 'center', 
+                        background: isSelected ? 'rgba(139, 92, 246, 0.3)' : 'rgba(15, 23, 42, 0.4)',
+                        border: isSelected ? '1px solid #a78bfa' : '1px solid var(--glass-border)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        borderRadius: '1rem'
+                      }}>
+                      <div style={{ fontSize: '0.75rem', color: isSelected ? '#fff' : '#64748b', fontWeight: '600', marginBottom: '1rem' }}>
+                        {date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
                       </div>
-                      <Icon color="#a78bfa" size={24} style={{ margin: '1rem auto' }} />
+                      <Icon color={isSelected ? 'white' : '#a78bfa'} size={24} style={{ margin: '1rem auto' }} />
                       <div style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.25rem' }}>
                         {Math.round(item.main.temp_max)}°
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      <div style={{ fontSize: '0.75rem', color: isSelected ? '#e2e8f0' : '#64748b' }}>
                         {Math.round(item.main.temp_min)}°
                       </div>
                     </div>
