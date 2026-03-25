@@ -108,7 +108,7 @@ const LandingPage = () => {
           maxWidth: '600px',
           margin: '0 auto 3rem auto'
         }}>
-          Harness the power of atmospheric intelligence. Aura Glaze provides hyper-local clarity for your environment with editorial elegance.
+          Harness the power of Atmos intelligence. Aura Glaze provides hyper-local clarity for your environment with editorial elegance.
         </p>
 
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
@@ -174,7 +174,7 @@ const LandingPage = () => {
 
       {/* Mastery Section */}
       <section style={{ padding: '8rem 4rem', maxWidth: '1200px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontFamily: 'Outfit' }}>Atmospheric Mastery</h2>
+        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontFamily: 'Outfit' }}>Atmos Mastery</h2>
         <p style={{ color: '#94a3b8', maxWidth: '500px', marginBottom: '4rem' }}>
           Deep integration of radar, air analytics, and predictive modelling wrapped in a translucent glass interface.
         </p>
@@ -189,7 +189,7 @@ const LandingPage = () => {
              <Activity color="#3b82f6" size={32} style={{ marginBottom: '1.5rem' }} />
              <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Real-time Radar</h3>
              <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
-               Experience zero-latency atmospheric scanning. Our NEXRAD-integrated visualization brings every storm cell into sharp focus.
+               Experience zero-latency Atmos scanning. Our NEXRAD-integrated visualization brings every storm cell into sharp focus.
              </p>
              <button style={{ 
                marginTop: '2rem', 
@@ -262,7 +262,7 @@ const LandingPage = () => {
       }}>
         <div>
           <div style={{ fontWeight: '700', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Aura Glaze</div>
-          <p style={{ color: '#64748b', fontSize: '0.75rem' }}>© 2024 Aura Glaze. Atmospheric Precision.</p>
+          <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Â© 2024 Aura Glaze. Atmos Precision.</p>
         </div>
         <div style={{ display: 'flex', gap: '2rem', fontSize: '0.75rem', color: '#94a3b8' }}>
           <span>PRIVACY POLICY</span>

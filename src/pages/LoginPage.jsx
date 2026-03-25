@@ -25,7 +25,7 @@ const LoginPage = ({ onLogin }) => {
     }}>
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '3rem', fontFamily: 'Outfit', fontWeight: '700', marginBottom: '0.5rem' }}>Aura Glaze</h1>
-        <p style={{ color: '#94a3b8', letterSpacing: '2px', fontSize: '0.9rem' }}>Atmospheric Precision</p>
+        <p style={{ color: '#94a3b8', letterSpacing: '2px', fontSize: '0.9rem' }}>Atmos Precision</p>
       </div>
 
       <motion.div 
@@ -110,7 +110,7 @@ const LoginPage = ({ onLogin }) => {
               <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input 
                 type="password" 
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -191,7 +191,7 @@ const LoginPage = ({ onLogin }) => {
           cursor: 'pointer' 
         }}
       >
-        ← BACK TO FORECASTS
+        â† BACK TO FORECASTS
       </button>
 
       <footer style={{ marginTop: 'auto', padding: '2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#475569' }}>
@@ -202,7 +202,7 @@ const LoginPage = ({ onLogin }) => {
            <span>COOKIE SETTINGS</span>
            <span>HELP CENTER</span>
          </div>
-         <span>© 2024 AURA GLAZE. ATMOSPHERIC PRECISION.</span>
+         <span>Â© 2024 AURA GLAZE. Atmos PRECISION.</span>
       </footer>
     </div>
   );

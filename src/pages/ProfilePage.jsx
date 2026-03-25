@@ -1,15 +1,16 @@
 import React from 'react';
-import { 
-  User, Bell, Settings, Edit2, ShieldAlert, 
-  MapPin, Clock, Calendar, Star, ChevronRight, 
+import {
+  User, Bell, Settings, Edit2, ShieldAlert,
+  MapPin, Clock, Calendar, Star, ChevronRight,
   Search, CloudLightning, Globe, Zap, Navigation,
-  LayoutDashboard, History, PieChart, HelpCircle, Compass, Map
+  LayoutDashboard, History, PieChart, HelpCircle, Compass, Map, LogOut
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const SidebarItem = ({ icon: Icon, label, active = false, to = '#' }) => (
-  <Link 
+const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
+  <Link
     to={to}
+    onClick={onClick}
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -54,7 +55,7 @@ const ProfilePage = () => {
             <Compass color="white" size={20} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmospheric</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmos</h1>
             <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', margin: 0 }}>MIDNIGHT LUSTER V2</p>
           </div>
         </Link>
@@ -68,6 +69,11 @@ const ProfilePage = () => {
         <div>
           <SidebarItem icon={Settings} label="Settings" to="/settings" />
           <SidebarItem icon={HelpCircle} label="Support" />
+          <SidebarItem icon={LogOut} label="Logout" onClick={(e) => {
+            e.preventDefault();
+            localStorage.removeItem('isAuthenticated');
+            window.location.href = '/login';
+          }} />
         </div>
       </aside>
 
@@ -144,15 +150,15 @@ const ProfilePage = () => {
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {[
-                  { name: 'Reykjavík', temp: '2°C', icon: CloudLightning },
-                  { name: 'Oslo', temp: '-4°C', icon: Zap }
+                  { name: 'ReykjavÃ­k', temp: '2Â°C', icon: CloudLightning },
+                  { name: 'Oslo', temp: '-4Â°C', icon: Zap }
                 ].map((loc) => (
                   <div key={loc.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: '#02040a', borderRadius: '1rem', border: '1px solid #1e293b' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                        <loc.icon size={20} color="#60a5fa" />
                        <div>
                          <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{loc.name}</div>
-                         <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{loc.temp} • Light Snow</div>
+                         <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{loc.temp} â€¢ Light Snow</div>
                        </div>
                     </div>
                     <ChevronRight size={18} color="#475569" />

@@ -5,13 +5,14 @@ import {
   MapPin, Clock, Calendar, Star, ChevronRight, 
   Search, CloudLightning, Globe, Zap, Navigation,
   LayoutDashboard, History, PieChart, HelpCircle, Compass, Map,
-  Eye, EyeOff, Thermometer, Wind, CheckCircle2
+  Eye, EyeOff, Thermometer, Wind, CheckCircle2, LogOut
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const SidebarItem = ({ icon: Icon, label, active = false, to = '#' }) => (
-  <Link 
+const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
+  <Link
     to={to}
+    onClick={onClick}
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -58,7 +59,7 @@ const SettingsPage = () => {
             <Compass color="white" size={20} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmospheric</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmos</h1>
             <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', margin: 0 }}>MIDNIGHT LUSTER V2</p>
           </div>
         </Link>
@@ -72,6 +73,11 @@ const SettingsPage = () => {
         <div>
           <SidebarItem icon={Settings} label="Settings" active to="/settings" />
           <SidebarItem icon={HelpCircle} label="Support" />
+          <SidebarItem icon={LogOut} label="Logout" onClick={(e) => {
+            e.preventDefault();
+            localStorage.removeItem('isAuthenticated');
+            window.location.href = '/login';
+          }} />
         </div>
       </aside>
 
@@ -86,7 +92,7 @@ const SettingsPage = () => {
         <section style={{ marginBottom: '3rem' }}>
           <h1 style={{ fontSize: '3.5rem', fontWeight: '700', marginBottom: '1rem' }}>Settings</h1>
           <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: '600px', lineHeight: '1.6' }}>
-            Tailor your atmospheric experience. Adjust how Aura Glaze Night visualizes the nocturnal world for you.
+            Tailor your Atmos experience. Adjust how Aura Glaze Night visualizes the nocturnal world for you.
           </p>
         </section>
 
@@ -109,7 +115,7 @@ const SettingsPage = () => {
                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>PASSWORD</label>
                    <input 
                       type={showPassword ? "text" : "password"}
-                      defaultValue="••••••••••••••••"
+                      defaultValue="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       style={{ width: '100%', background: '#02040a', border: '1px solid #1e293b', borderRadius: '8px', padding: '0.85rem 1rem', color: 'white', outline: 'none' }}
                    />
                    <div 
@@ -226,7 +232,7 @@ const SettingsPage = () => {
         <footer style={{ borderTop: '1px solid #1e293b', padding: '4rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
            <div>
               <div style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Outfit', marginBottom: '1rem' }}>Aura Glaze Night</div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>© 2024 AURA GLAZE NIGHT. ALL RIGHTS RESERVED.</div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>Â© 2024 AURA GLAZE NIGHT. ALL RIGHTS RESERVED.</div>
            </div>
            <div style={{ display: 'flex', gap: '2.5rem', fontSize: '0.7rem', color: '#64748b', fontWeight: '700', letterSpacing: '1px' }}>
               <span>PRIVACY POLICY</span>

@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Bell, Navigation, Search, User, Filter, 
+import {
+  Bell, Navigation, Search, User, Filter,
   ChevronRight, Thermometer, Droplets, MapPin,
   LayoutDashboard, History, PieChart, HelpCircle, Compass, Map,
-  Plus, Minus, RefreshCw, Layers, Settings
+  Plus, Minus, RefreshCw, Layers, Settings, LogOut
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const SidebarItem = ({ icon: Icon, label, active = false, to = '#' }) => (
-  <Link 
+const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
+  <Link
     to={to}
+    onClick={onClick}
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -58,7 +59,7 @@ const MapsPage = () => {
             <Compass color="white" size={20} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmospheric</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmos</h1>
             <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', margin: 0 }}>MIDNIGHT LUSTER V2</p>
           </div>
         </Link>
@@ -73,6 +74,11 @@ const MapsPage = () => {
         <div>
           <SidebarItem icon={Settings} label="Settings" to="/settings" />
           <SidebarItem icon={HelpCircle} label="Support" />
+          <SidebarItem icon={LogOut} label="Logout" onClick={(e) => {
+            e.preventDefault();
+            localStorage.removeItem('isAuthenticated');
+            window.location.href = '/login';
+          }} />
         </div>
       </aside>
 

@@ -232,7 +232,7 @@ const SearchResults = () => {
         flexDirection: 'column'
       }}>
         <div style={{ padding: '0', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#60a5fa', marginBottom: '0.2rem' }}>Atmospheric Lens</h2>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#60a5fa', marginBottom: '0.2rem' }}>Atmos Lens</h2>
           <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>Local Weather</p>
         </div>
 
@@ -322,7 +322,7 @@ const SearchResults = () => {
               <div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>
                   <Map size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                  Map View — {weatherData.name}
+                  Map View â€” {weatherData.name}
                 </h2>
                 <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>Showing ~3 km radius around the searched location</p>
               </div>
@@ -346,7 +346,7 @@ const SearchResults = () => {
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: '#3b82f6', fontSize: '0.8rem', marginTop: '1rem', textAlign: 'center', textDecoration: 'none', fontWeight: '600' }}>
-              Open Full Map in New Tab ↗
+              Open Full Map in New Tab â†—
             </a>
           </div>
         ) : displayData && weatherData && (
@@ -356,10 +356,10 @@ const SearchResults = () => {
               <Navigation size={14} /> {weatherData.name}, {weatherData.sys.country}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <h1 style={{ fontSize: '8rem', fontWeight: '700', fontFamily: 'Outfit', lineHeight: '1' }}>{Math.round(displayData.main.temp)}°</h1>
+              <h1 style={{ fontSize: '8rem', fontWeight: '700', fontFamily: 'Outfit', lineHeight: '1' }}>{Math.round(displayData.main.temp)}Â°</h1>
             </div>
             <div style={{ fontSize: '1.8rem', fontWeight: '500', marginBottom: '3rem', textTransform: 'capitalize' }}>
-              {displayData.weather[0].description} <span style={{ color: '#64748b', fontSize: '1.2rem', marginLeft: '1rem' }}>H: {Math.round(displayData.main.temp_max)}° L: {Math.round(displayData.main.temp_min)}°</span>
+              {displayData.weather[0].description} <span style={{ color: '#64748b', fontSize: '1.2rem', marginLeft: '1rem' }}>H: {Math.round(displayData.main.temp_max)}Â° L: {Math.round(displayData.main.temp_min)}Â°</span>
             </div>
 
             {/* Grid Stats */}
@@ -434,8 +434,8 @@ const SearchResults = () => {
                     }}>
                     <div style={{ fontSize: '0.8rem', color: isSelected ? '#fff' : '#94a3b8', marginBottom: '1rem', fontWeight: '700' }}>{date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}</div>
                     <Icon color={isSelected ? 'white' : '#f59e0b'} size={32} style={{ margin: '1rem auto' }} />
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{Math.round(item.main.temp_max)}°</div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{Math.round(item.main.temp_min)}°</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{Math.round(item.main.temp_max)}Â°</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{Math.round(item.main.temp_min)}Â°</div>
                   </div>
                 );
               })}

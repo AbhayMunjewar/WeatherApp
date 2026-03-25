@@ -6,7 +6,7 @@ import {
   Search, MapPin, Settings, Bell, Wind, Droplets, 
   ArrowUp, ArrowDown, Eye, Umbrella, Sun, ShieldCheck,
   ChevronRight, Compass, Cloud, CloudRain, CloudLightning, Loader2,
-  Locate, Activity
+  Locate, Activity, LogOut
 } from 'lucide-react';
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
@@ -232,7 +232,7 @@ const Dashboard = () => {
             <Compass color="white" size={20} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmospheric</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmos</h1>
             <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', margin: 0 }}>MIDNIGHT LUSTER V2</p>
           </div>
         </div>
@@ -251,6 +251,11 @@ const Dashboard = () => {
 
         <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <SidebarItem icon={HelpCircle} label="Support" />
+          <SidebarItem icon={LogOut} label="Logout" onClick={(e) => {
+            e.preventDefault();
+            localStorage.removeItem('isAuthenticated');
+            window.location.href = '/login';
+          }} />
         </div>
       </aside>
 
@@ -266,7 +271,7 @@ const Dashboard = () => {
           zIndex: 100
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4rem' }}>
-            <div style={{ color: '#a78bfa', fontWeight: '700', fontSize: '1.5rem', fontFamily: 'Outfit' }}>AuraWeather</div>
+            <div style={{ color: '#a78bfa', fontWeight: '700', fontSize: '1.5rem', fontFamily: 'Outfit' }}>Atmos</div>
 
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
@@ -390,11 +395,11 @@ const Dashboard = () => {
                   
                   <div style={{ position: 'absolute', right: '3rem', top: '50%', transform: 'translateY(-50%)' }}>
                     <div style={{ fontSize: '8rem', fontWeight: '700', fontFamily: 'Outfit', lineHeight: 1 }}>
-                      {Math.round(displayData.main.temp)}°
+                      {Math.round(displayData.main.temp)}Â°
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                      <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>↑ {Math.round(displayData.main.temp_max)}°</div>
-                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>↓ {Math.round(displayData.main.temp_min)}°</div>
+                      <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>â†‘ {Math.round(displayData.main.temp_max)}Â°</div>
+                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700' }}>â†“ {Math.round(displayData.main.temp_min)}Â°</div>
                     </div>
                   </div>
 
@@ -451,10 +456,10 @@ const Dashboard = () => {
                       </div>
                       <Icon color={isSelected ? 'white' : '#a78bfa'} size={24} style={{ margin: '1rem auto' }} />
                       <div style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.25rem' }}>
-                        {Math.round(item.main.temp_max)}°
+                        {Math.round(item.main.temp_max)}Â°
                       </div>
                       <div style={{ fontSize: '0.75rem', color: isSelected ? '#e2e8f0' : '#64748b' }}>
-                        {Math.round(item.main.temp_min)}°
+                        {Math.round(item.main.temp_min)}Â°
                       </div>
                     </div>
                   );
@@ -504,7 +509,7 @@ const Dashboard = () => {
               overflow: 'hidden'
             }}>
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem' }}>Aura Premium</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem' }}>Atmos Premium</h3>
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '2rem', lineHeight: '1.5' }}>
                   Unlock hyper-local precision and AI weather predictions.
                 </p>

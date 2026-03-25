@@ -1,17 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, Bell, Settings, ShieldAlert, 
-  MapPin, Clock, Calendar, Star, ChevronRight, 
+import {
+  User, Bell, Settings, ShieldAlert,
+  MapPin, Clock, Calendar, Star, ChevronRight,
   Search, CloudLightning, Globe, Zap, Navigation,
   LayoutDashboard, History, PieChart, HelpCircle, Compass, Map,
-  Thermometer, Wind, Droplets, Sun, CloudRain
+  Thermometer, Wind, Droplets, Sun, CloudRain, LogOut
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const SidebarItem = ({ icon: Icon, label, active = false, to = '#' }) => (
-  <Link 
+const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
+  <Link
     to={to}
+    onClick={onClick}
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -45,7 +46,7 @@ const HistoryCard = ({ date, city, temp, cond, icon: Icon, wind, humidity }) => 
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
        <Thermometer size={18} color="#f87171" />
-       <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>{temp}°C</span>
+       <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>{temp}Â°C</span>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
        <Wind size={18} color="#3b82f6" />
@@ -97,7 +98,7 @@ const HistoryPage = () => {
             <Compass color="white" size={20} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmospheric</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit', margin: 0 }}>Atmos</h1>
             <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', margin: 0 }}>MIDNIGHT LUSTER V2</p>
           </div>
         </Link>
@@ -111,6 +112,11 @@ const HistoryPage = () => {
         <div>
           <SidebarItem icon={Settings} label="Settings" to="/settings" />
           <SidebarItem icon={HelpCircle} label="Support" />
+          <SidebarItem icon={LogOut} label="Logout" onClick={(e) => {
+            e.preventDefault();
+            localStorage.removeItem('isAuthenticated');
+            window.location.href = '/login';
+          }} />
         </div>
       </aside>
 
@@ -142,7 +148,7 @@ const HistoryPage = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
              <div>
                 <h1 style={{ fontSize: '3rem', fontWeight: '700', marginBottom: '0.5rem' }}>Historical Feed</h1>
-                <p style={{ color: '#64748b', fontSize: '1rem' }}>Review past atmospheric phenomena and trend patterns.</p>
+                <p style={{ color: '#64748b', fontSize: '1rem' }}>Review past Atmos phenomena and trend patterns.</p>
              </div>
              <button style={{ background: '#1e293b', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Calendar size={18} /> Select Range
