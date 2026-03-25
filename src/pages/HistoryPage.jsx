@@ -32,15 +32,15 @@ const SidebarItem = ({ icon: Icon, label, active = false, to = '#' }) => (
   </Link>
 );
 
-const HistoryCard = ({ date, temp, cond, icon: Icon, wind, humidity }) => (
+const HistoryCard = ({ date, city, temp, cond, icon: Icon, wind, humidity }) => (
   <div className="glass" style={{ padding: '1.5rem 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.5fr)', alignItems: 'center', gap: '2rem', marginBottom: '1rem' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
        <div style={{ padding: '0.75rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px' }}>
           <Icon size={24} color="#a78bfa" />
        </div>
        <div>
-          <div style={{ fontSize: '1rem', fontWeight: '700' }}>{date}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Aura Peak reached at 2:00 AM</div>
+          <div style={{ fontSize: '1rem', fontWeight: '700' }}>{city}</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{date}</div>
        </div>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -63,6 +63,18 @@ const HistoryCard = ({ date, temp, cond, icon: Icon, wind, humidity }) => (
 
 const HistoryPage = () => {
   const navigate = useNavigate();
+  const [history, setHistory] = React.useState([]);
+
+  React.useEffect(() => {
+    fetch('http://127.0.0.1:5000/records')
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.records) {
+          setHistory(data.records.reverse());
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <div style={{
@@ -139,17 +151,20 @@ const HistoryPage = () => {
         </section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-           {[
-             { date: 'March 22, 2024', temp: 18, cond: 'Partly Cloudy', icon: Sun, wind: 12, humidity: 45 },
-             { date: 'March 21, 2024', temp: 14, cond: 'Rain Showers', icon: CloudRain, wind: 24, humidity: 82 },
-             { date: 'March 20, 2024', temp: 12, cond: 'Stormy Night', icon: CloudLightning, wind: 38, humidity: 90 },
-             { date: 'March 19, 2024', temp: 16, cond: 'Clear Sky', icon: Zap, wind: 8, humidity: 30 },
-             { date: 'March 18, 2024', temp: 15, cond: 'Mist', icon: CloudRain, wind: 14, humidity: 75 },
-             { date: 'March 17, 2024', temp: 19, cond: 'Sunny', icon: Sun, wind: 10, humidity: 25 },
-             { date: 'March 16, 2024', temp: 21, cond: 'Clear Sky', icon: Zap, wind: 6, humidity: 15 }
-           ].map(item => (
-             <HistoryCard key={item.date} {...item} />
-           ))}
+           {history.length > 0 ? history.map(item => (
+             <HistoryCard 
+               key={item.id} 
+               date={new Date(item.date).toLocaleString()} 
+               city={item.city}
+               temp={Math.round(item.temperature)} 
+               cond={item.description} 
+               icon={Sun} 
+               wind={0} 
+               humidity={0} 
+             />
+           )) : (
+             <p style={{ color: '#64748b' }}>No search history found.</p>
+           )}
         </div>
       </main>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Cloud, Sun, Droplets, Wind, Navigation, 
@@ -43,6 +43,7 @@ const SearchResults = () => {
   const [error, setError] = useState(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
   const [showMap, setShowMap] = useState(false);
+  const lastSavedCity = useRef(null);
 
   useEffect(() => {
     setSelectedDayIndex(null);
@@ -145,6 +146,25 @@ const SearchResults = () => {
         // Filter to get one forecast per day (around noon)
         const dailyForecast = foreData.list.filter(item => item.dt_txt.includes('12:00:00'));
         setForecastData(dailyForecast);
+
+        // Save to Database Backgroundly
+        if (lastSavedCity.current !== city) {
+          lastSavedCity.current = city; // Mark immediately to prevent race conditions in Strict Mode
+          try {
+            await fetch('http://127.0.0.1:5000/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                city: currentData.name,
+                temperature: currentData.main.temp,
+                description: currentData.weather[0].description
+              })
+            });
+          } catch(e) {
+            console.error("Failed to save to history DB", e);
+            lastSavedCity.current = null; // Revert on failure
+          }
+        }
         
       } catch (err) {
         setError(err.message);
