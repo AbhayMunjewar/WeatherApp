@@ -164,7 +164,7 @@ const Dashboard = () => {
     return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const fetchWeatherData = async (city, saveAsDefault = true) => {
+  const fetchWeatherData = async (city) => {
     setLoading(true);
     setError(null);
     setSelectedDayIndex(null);
@@ -180,10 +180,6 @@ const Dashboard = () => {
       const currentData = await currentRes.json();
       setWeatherData(currentData);
       setSearchTerm(currentData.name || city);
-      
-      if (saveAsDefault) {
-        localStorage.setItem('lastDashboardCity', currentData.name || city); // Remember this for next time!
-      }
       
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
@@ -206,6 +202,8 @@ const Dashboard = () => {
       
     } catch (err) {
       setError(err.message || 'Something went wrong while fetching the latest weather.');
+      // If the saved city throws a 404 (such as from a bad diacritic), purge it so the board re-initializes cleanly next refresh
+      localStorage.removeItem('lastDashboardCity');
     } finally {
       setLoading(false);
     }
@@ -244,7 +242,6 @@ const Dashboard = () => {
 
       setWeatherData(currentData);
       setSearchTerm(currentData.name); // Update search term to current precise city
-      localStorage.setItem('lastDashboardCity', currentData.name); // Remember this!
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
       // 3. Fetch 5-Day Forecast by Coords
@@ -302,26 +299,14 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Check if the user previously saved a default or last-searched location
-    let savedLocation = localStorage.getItem('lastDashboardCity');
-    
-    // Purge accidental fallbacks so the user isn't permanently trapped
-    if (savedLocation === 'London' || savedLocation === 'Mumbai') {
-      localStorage.removeItem('lastDashboardCity');
-      savedLocation = null;
-    }
-
-    if (savedLocation) {
-      fetchWeatherData(savedLocation);
-      return;
-    }
-
-    // Attempt high-accuracy IP Geolocation to bypass browser-ISP routing errors (very common in India where it locks to Mumbai)
+    // Attempt high-accuracy IP Geolocation primarily, to avoid locking to ISP data hubs (e.g. Mumbai)
     fetch("https://ipapi.co/json/")
       .then(res => res.json())
       .then(data => {
-         if (data && data.city) {
-            fetchWeatherData(data.city, false); // Fetch weather but don't hard-save it unless user searches it
+         if (data && data.latitude && data.longitude) {
+            fetchWeatherByCoords(data.latitude, data.longitude); // Coordinates never 404 on OpenWeather!
+         } else if (data && data.city) {
+            fetchWeatherData(data.city); 
          } else {
             throw new Error("IP Geolocation failed to identify city");
          }
@@ -334,13 +319,12 @@ const Dashboard = () => {
                fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
              },
              (geoError) => {
-               console.log('Geolocation denied or unavailable, falling back to London:', geoError.message);
-               fetchWeatherData('London', false);
+               setError("Unable to determine location automatically. Please search for your city above.");
              },
              { timeout: 8000, maximumAge: 300000 }
            );
          } else {
-           fetchWeatherData('London', false);
+           setError("Unable to determine location automatically. Please search for your city above.");
          }
       });
   }, []);
