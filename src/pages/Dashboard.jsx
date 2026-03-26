@@ -164,7 +164,7 @@ const Dashboard = () => {
     return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const fetchWeatherData = async (city) => {
+  const fetchWeatherData = async (city, saveAsDefault = true) => {
     setLoading(true);
     setError(null);
     setSelectedDayIndex(null);
@@ -180,7 +180,11 @@ const Dashboard = () => {
       const currentData = await currentRes.json();
       setWeatherData(currentData);
       setSearchTerm(currentData.name || city);
-      localStorage.setItem('lastDashboardCity', currentData.name || city); // Remember this for next time!
+      
+      if (saveAsDefault) {
+        localStorage.setItem('lastDashboardCity', currentData.name || city); // Remember this for next time!
+      }
+      
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
       // Fetch 5-Day Forecast
@@ -313,13 +317,13 @@ const Dashboard = () => {
         },
         (geoError) => {
           console.log('Geolocation denied or unavailable, falling back to London:', geoError.message);
-          fetchWeatherData('London');
+          fetchWeatherData('London', false);
         },
         { timeout: 8000, maximumAge: 300000 }
       );
     } else {
       // Browser doesn't support geolocation
-      fetchWeatherData('London');
+      fetchWeatherData('London', false);
     }
   }, []);
 
