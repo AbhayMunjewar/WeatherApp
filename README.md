@@ -51,43 +51,27 @@ A comprehensive, full-stack weather application built with React and Flask that 
 
 `
 weather-app/
- public/                      # Static assets
- src/
-    components/              # Reusable components
-       CitySearchWithSuggestions.jsx
-       WeatherBackground.jsx
-       WeatherAIQuestionBox.jsx
-       LoadingStates.jsx
-       ErrorBoundary.jsx
-       DebugComponent.jsx
-    pages/                   # Page components
-       Dashboard.jsx
-       SearchResults.jsx
-       AlertsPage.jsx
-       ProfilePage.jsx
-       SettingsPage.jsx
-       HistoryPage.jsx
-       LoginPage.jsx
-       LandingPage.jsx
-       ...more pages
-    App.jsx
-    main.jsx
-    index.css
- backend/
-    app.py
-    requirements.txt
-    .env
- docs/                        # Documentation
-    INSTALLATION.md
-    API_DOCUMENTATION.md
-    TROUBLESHOOTING.md
-    ARCHITECTURE.md
- tests/
- vite.config.js
- package.json
- .env.example
- .gitignore
- README.md
+├── 📄 index.html, package.json, vite.config.js
+├── 📄 CONTRIBUTING.md, README.md, .env.example
+│
+├── 📁 src/
+│   ├── main.jsx, index.css, App.jsx
+│   └── 📁 pages/
+│       ├── Dashboard.jsx (main weather display)
+│       ├── AlertsPage.jsx, MapsPage.jsx
+│       ├── HistoryPage.jsx, ProfilePage.jsx
+│       ├── SettingsPage.jsx, SearchResults.jsx
+│       ├── LoginPage.jsx, LandingPage.jsx
+│
+├── 📁 docs/
+│   ├── INSTALLATION.md
+│   ├── API_DOCUMENTATION.md
+│   ├── ARCHITECTURE.md
+│   └── FOLDER_STRUCTURE.md ← Full details here
+│
+└── 📁 backend/ (separate repo)
+    ├── app.py, requirements.txt
+    └── .env.example
 `
 
 ##  Quick Start
