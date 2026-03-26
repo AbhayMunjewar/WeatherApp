@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000').replace(/\/$/, "");
 
 const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
   <Link

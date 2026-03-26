@@ -12,7 +12,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+const API_BASE_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000').replace(/\/$/, "");
 
 const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
   <Link 
