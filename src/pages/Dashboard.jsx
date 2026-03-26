@@ -302,29 +302,47 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // First, check if the user previously saved a default or last-searched location
-    const savedLocation = localStorage.getItem('lastDashboardCity');
+    // Check if the user previously saved a default or last-searched location
+    let savedLocation = localStorage.getItem('lastDashboardCity');
+    
+    // Purge accidental fallbacks so the user isn't permanently trapped
+    if (savedLocation === 'London' || savedLocation === 'Mumbai') {
+      localStorage.removeItem('lastDashboardCity');
+      savedLocation = null;
+    }
+
     if (savedLocation) {
       fetchWeatherData(savedLocation);
       return;
     }
 
-    // Try to load weather for user's current location on mount if no saved location
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
-        },
-        (geoError) => {
-          console.log('Geolocation denied or unavailable, falling back to London:', geoError.message);
-          fetchWeatherData('London', false);
-        },
-        { timeout: 8000, maximumAge: 300000 }
-      );
-    } else {
-      // Browser doesn't support geolocation
-      fetchWeatherData('London', false);
-    }
+    // Attempt high-accuracy IP Geolocation to bypass browser-ISP routing errors (very common in India where it locks to Mumbai)
+    fetch("https://ipapi.co/json/")
+      .then(res => res.json())
+      .then(data => {
+         if (data && data.city) {
+            fetchWeatherData(data.city, false); // Fetch weather but don't hard-save it unless user searches it
+         } else {
+            throw new Error("IP Geolocation failed to identify city");
+         }
+      })
+      .catch(err => {
+         console.warn("IP tracking failed, falling back to browser geolocation", err);
+         if ('geolocation' in navigator) {
+           navigator.geolocation.getCurrentPosition(
+             (position) => {
+               fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+             },
+             (geoError) => {
+               console.log('Geolocation denied or unavailable, falling back to London:', geoError.message);
+               fetchWeatherData('London', false);
+             },
+             { timeout: 8000, maximumAge: 300000 }
+           );
+         } else {
+           fetchWeatherData('London', false);
+         }
+      });
   }, []);
 
   useEffect(() => {
