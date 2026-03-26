@@ -180,6 +180,7 @@ const Dashboard = () => {
       const currentData = await currentRes.json();
       setWeatherData(currentData);
       setSearchTerm(currentData.name || city);
+      localStorage.setItem('lastDashboardCity', currentData.name || city); // Remember this for next time!
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
       // Fetch 5-Day Forecast
@@ -239,6 +240,7 @@ const Dashboard = () => {
 
       setWeatherData(currentData);
       setSearchTerm(currentData.name); // Update search term to current precise city
+      localStorage.setItem('lastDashboardCity', currentData.name); // Remember this!
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
       // 3. Fetch 5-Day Forecast by Coords
@@ -296,7 +298,14 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Try to load weather for user's current location on mount
+    // First, check if the user previously saved a default or last-searched location
+    const savedLocation = localStorage.getItem('lastDashboardCity');
+    if (savedLocation) {
+      fetchWeatherData(savedLocation);
+      return;
+    }
+
+    // Try to load weather for user's current location on mount if no saved location
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
