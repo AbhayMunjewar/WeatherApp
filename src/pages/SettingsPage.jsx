@@ -37,9 +37,20 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [units, setUnits] = useState({ temp: 'celsius', wind: 'mph' });
-  const [email, setEmail] = useState('luna.voyager@midnight.com');
   const [darkMode, setDarkMode] = useState(true);
   const [mapOpacity, setMapOpacity] = useState(75);
+
+  // Read user profile from localStorage (set during login/signup)
+  const storedProfile = (() => {
+    try {
+      const raw = localStorage.getItem('userProfile');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  })();
+
+  const [email, setEmail] = useState(storedProfile?.email || '');
+  const [userName, setUserName] = useState(storedProfile?.name || '');
+
   const [notifications, setNotifications] = useState({
     precipitation: true,
     storms: true,
@@ -54,12 +65,25 @@ const SettingsPage = () => {
 
   const handleUpdateProfile = () => {
     try {
+      // Save settings
       localStorage.setItem('userSettings', JSON.stringify({
         email,
         darkMode,
         mapOpacity,
         units,
         notifications: updatedNotifications
+      }));
+      // Also update the userProfile so the rest of the app sees the changes
+      const currentProfile = (() => {
+        try {
+          const raw = localStorage.getItem('userProfile');
+          return raw ? JSON.parse(raw) : {};
+        } catch { return {}; }
+      })();
+      localStorage.setItem('userProfile', JSON.stringify({
+        ...currentProfile,
+        name: userName,
+        email: email
       }));
       setSaveStatus('✓ Settings saved successfully!');
       setTimeout(() => setSaveStatus(''), 3000);
@@ -136,10 +160,22 @@ const SettingsPage = () => {
              </h3>
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
                 <div>
-                   <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>EMAIL ADDRESS</label>
+                   <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>FULL NAME</label>
                    <input 
                       type="text" 
-                      defaultValue="luna.voyager@midnight.com"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Your name"
+                      style={{ width: '100%', background: '#02040a', border: '1px solid #1e293b', borderRadius: '8px', padding: '0.85rem 1rem', color: 'white', outline: 'none' }}
+                   />
+                </div>
+                <div>
+                   <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>EMAIL ADDRESS</label>
+                   <input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
                       style={{ width: '100%', background: '#02040a', border: '1px solid #1e293b', borderRadius: '8px', padding: '0.85rem 1rem', color: 'white', outline: 'none' }}
                    />
                 </div>
