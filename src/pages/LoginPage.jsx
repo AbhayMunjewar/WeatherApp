@@ -1,16 +1,61 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Chrome, ShieldAlert } from 'lucide-react';
+import { Mail, Lock, Chrome, ShieldAlert, User, Loader2 } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000';
 
 const LoginPage = ({ onLogin }) => {
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const resetStatus = () => setStatus({ type: '', message: '' });
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // In a real app, handle authentication here
-    onLogin();
+    resetStatus();
+
+    if (activeTab === 'signup') {
+      if (!fullName.trim()) {
+        setStatus({ type: 'error', message: 'Please provide your name.' });
+        return;
+      }
+      if (password !== confirmPassword) {
+        setStatus({ type: 'error', message: 'Passwords do not match.' });
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+      const endpoint = activeTab === 'signup' ? '/auth/signup' : '/auth/login';
+      const payload = activeTab === 'signup'
+        ? { name: fullName.trim(), email: email.trim(), password }
+        : { email: email.trim(), password };
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to authenticate.');
+      }
+
+      setStatus({ type: 'success', message: data.message || 'Success.' });
+      if (onLogin && data.user) {
+        onLogin(data.user);
+      }
+    } catch (err) {
+      setStatus({ type: 'error', message: err.message || 'Unexpected error.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,7 +69,7 @@ const LoginPage = ({ onLogin }) => {
       padding: '2rem'
     }}>
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '3rem', fontFamily: 'Outfit', fontWeight: '700', marginBottom: '0.5rem' }}>Aura Glaze</h1>
+        <h1 style={{ fontSize: '3rem', fontFamily: 'Outfit', fontWeight: '700', marginBottom: '0.5rem' }}>Atmos</h1>
         <p style={{ color: '#94a3b8', letterSpacing: '2px', fontSize: '0.9rem' }}>Atmos Precision</p>
       </div>
 
@@ -50,7 +95,10 @@ const LoginPage = ({ onLogin }) => {
           {['login', 'signup'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+                resetStatus();
+              }}
               style={{
                 flex: 1,
                 padding: '0.6rem',
@@ -70,6 +118,39 @@ const LoginPage = ({ onLogin }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {activeTab === 'signup' && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ 
+                display: 'block', 
+                color: '#94a3b8', 
+                fontSize: '0.75rem', 
+                fontWeight: '700', 
+                marginBottom: '0.75rem',
+                letterSpacing: '1px'
+              }}>FULL NAME</label>
+              <div style={{ position: 'relative' }}>
+                <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <input 
+                  type="text" 
+                  placeholder="Jane Doe"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '0.75rem',
+                    padding: '0.85rem 1rem 0.85rem 3rem',
+                    color: 'white',
+                    outline: 'none',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ 
               display: 'block', 
@@ -101,7 +182,7 @@ const LoginPage = ({ onLogin }) => {
             </div>
           </div>
 
-          <div style={{ marginBottom: '2rem' }}>
+          <div style={{ marginBottom: activeTab === 'signup' ? '1.5rem' : '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '1px' }}>PASSWORD</label>
               <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: '600', cursor: 'pointer' }}>Forgot Password?</span>
@@ -110,7 +191,7 @@ const LoginPage = ({ onLogin }) => {
               <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input 
                 type="password" 
-                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                placeholder="••••••••"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -128,12 +209,74 @@ const LoginPage = ({ onLogin }) => {
             </div>
           </div>
 
+          {activeTab === 'signup' && (
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{ 
+                display: 'block', 
+                color: '#94a3b8', 
+                fontSize: '0.75rem', 
+                fontWeight: '700', 
+                marginBottom: '0.75rem',
+                letterSpacing: '1px'
+              }}>CONFIRM PASSWORD</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <input 
+                  type="password" 
+                  placeholder="Repeat password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '0.75rem',
+                    padding: '0.85rem 1rem 0.85rem 3rem',
+                    color: 'white',
+                    outline: 'none',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {status.message && (
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              alignItems: 'center',
+              borderRadius: '0.75rem',
+              padding: '0.85rem 1rem',
+              marginBottom: '1.5rem',
+              border: status.type === 'error' ? '1px solid rgba(248, 113, 113, 0.4)' : '1px solid rgba(34, 197, 94, 0.4)',
+              background: status.type === 'error' ? 'rgba(69, 10, 10, 0.4)' : 'rgba(5, 46, 22, 0.4)',
+              color: status.type === 'error' ? '#fecaca' : '#bbf7d0'
+            }}>
+              <ShieldAlert size={18} />
+              <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>{status.message}</span>
+            </div>
+          )}
+
           <button 
             type="submit"
             className="btn-primary"
-            style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '2rem' }}
+            disabled={loading}
+            style={{ 
+              width: '100%', 
+              padding: '1rem', 
+              fontSize: '1.1rem', 
+              marginBottom: '2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              opacity: loading ? 0.8 : 1
+            }}
           >
-            Enter Aura
+            {loading && <Loader2 className="animate-spin" size={18} />}
+            {activeTab === 'signup' ? 'Create Account' : 'Enter Atmos'}
           </button>
         </form>
 
@@ -191,18 +334,18 @@ const LoginPage = ({ onLogin }) => {
           cursor: 'pointer' 
         }}
       >
-        â† BACK TO FORECASTS
+        ← BACK TO FORECASTS
       </button>
 
       <footer style={{ marginTop: 'auto', padding: '2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#475569' }}>
-         <span style={{ fontWeight: '700', color: 'white' }}>Aura Glaze</span>
+         <span style={{ fontWeight: '700', color: 'white' }}>Atmos</span>
          <div style={{ display: 'flex', gap: '1.5rem' }}>
            <span>PRIVACY POLICY</span>
            <span>TERMS OF SERVICE</span>
            <span>COOKIE SETTINGS</span>
            <span>HELP CENTER</span>
          </div>
-         <span>Â© 2024 AURA GLAZE. Atmos PRECISION.</span>
+         <span>© 2024 Atmos. Precision perfected.</span>
       </footer>
     </div>
   );

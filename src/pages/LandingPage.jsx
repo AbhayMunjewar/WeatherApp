@@ -25,7 +25,7 @@ const LandingPage = () => {
         background: 'rgba(2, 4, 10, 0.5)',
         backdropFilter: 'blur(10px)'
       }}>
-        <div style={{ fontWeight: '700', fontSize: '1.5rem', fontFamily: 'Outfit' }}>Aura Glaze</div>
+        <div style={{ fontWeight: '700', fontSize: '1.5rem', fontFamily: 'Outfit' }}>Atmos</div>
         <div style={{ display: 'flex', gap: '1.5rem' }}>
           <button 
             onClick={() => navigate('/login')}
@@ -108,7 +108,7 @@ const LandingPage = () => {
           maxWidth: '600px',
           margin: '0 auto 3rem auto'
         }}>
-          Harness the power of Atmos intelligence. Aura Glaze provides hyper-local clarity for your environment with editorial elegance.
+          Harness the power of Atmos intelligence. Atmos provides hyper-local clarity for your environment with editorial elegance.
         </p>
 
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
@@ -261,8 +261,8 @@ const LandingPage = () => {
         gap: '2rem'
       }}>
         <div>
-          <div style={{ fontWeight: '700', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Aura Glaze</div>
-          <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Â© 2024 Aura Glaze. Atmos Precision.</p>
+          <div style={{ fontWeight: '700', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Atmos</div>
+          <p style={{ color: '#64748b', fontSize: '0.75rem' }}>© 2024 Atmos. Precision redefined.</p>
         </div>
         <div style={{ display: 'flex', gap: '2rem', fontSize: '0.75rem', color: '#94a3b8' }}>
           <span>PRIVACY POLICY</span>

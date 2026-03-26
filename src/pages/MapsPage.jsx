@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Bell, Navigation, Search, User, Filter,
   ChevronRight, Thermometer, Droplets, MapPin,
-  LayoutDashboard, History, PieChart, HelpCircle, Compass, Map,
+  LayoutDashboard, History, PieChart, HelpCircle, Compass,
   Plus, Minus, RefreshCw, Layers, Settings, LogOut
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -66,17 +66,18 @@ const MapsPage = () => {
 
         <div style={{ flex: 1 }}>
           <SidebarItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" />
-          <SidebarItem icon={Map} label="Map" active to="/map" />
           <SidebarItem icon={History} label="History" to="/history" />
           <SidebarItem icon={Bell} label="Alerts" to="/alerts" />
+          <SidebarItem icon={User} label="Profile" to="/profile" />
         </div>
 
         <div>
           <SidebarItem icon={Settings} label="Settings" to="/settings" />
-          <SidebarItem icon={HelpCircle} label="Support" />
+          <SidebarItem icon={HelpCircle} label="Support" to="/support" />
           <SidebarItem icon={LogOut} label="Logout" onClick={(e) => {
             e.preventDefault();
             localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('userProfile');
             window.location.href = '/login';
           }} />
         </div>
