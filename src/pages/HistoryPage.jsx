@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000';
+
 const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
   <Link
     to={to}
@@ -92,7 +94,7 @@ const HistoryPage = () => {
 
   React.useEffect(() => {
     setLoading(true);
-    fetch('http://127.0.0.1:5000/records')
+    fetch(`${API_BASE_URL}/records`)
       .then(res => {
         if (!res.ok) {
           throw new Error('Failed to fetch history');
@@ -147,7 +149,7 @@ const HistoryPage = () => {
     setDeletingId(recordId);
     setStatus({ type: '', message: '' });
     try {
-      const response = await fetch(`http://127.0.0.1:5000/delete/${recordId}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/delete/${recordId}`, { method: 'DELETE' });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(payload?.error || 'Failed to delete record');

@@ -14,9 +14,14 @@ import { Search, Loader2, MapPin, X } from 'lucide-react';
 const CitySearchWithSuggestions = ({ 
   onCitySelect, 
   isLoading = false,
-  API_KEY 
+  API_KEY,
+  value = ''
 }) => {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(value);
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);

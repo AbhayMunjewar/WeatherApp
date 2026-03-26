@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000';
 const PIN_STORAGE_KEY = 'pinnedLocations';
 
 const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (

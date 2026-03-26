@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000';
+
 const ALERT_STORAGE_KEY = 'followedRegions';
 const LAST_LOCATION_KEY = 'lastAlertLocation';
 const LAST_FETCH_PARAMS_KEY = 'lastAlertFetchParams';
@@ -117,7 +119,7 @@ const AlertsPage = () => {
       const query = coords
         ? `latitude=${coords.latitude}&longitude=${coords.longitude}`
         : `location=${encodeURIComponent(locationName)}`;
-      const response = await fetch(`http://127.0.0.1:5000/alerts?${query}`);
+      const response = await fetch(`${API_BASE_URL}/alerts?${query}`);
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload?.error || 'Unable to load alerts.');

@@ -211,7 +211,7 @@ const Dashboard = () => {
     setSelectedDayIndex(null);
     setAirQuality(null);
     try {
-      // Fetch Current Weather by Coords
+      // 1. Fetch Current Weather by Coords
       const currentRes = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
       );
@@ -219,11 +219,29 @@ const Dashboard = () => {
         throw new Error('We could not load weather for your current location. Please search manually.');
       }
       const currentData = await currentRes.json();
+
+      // 2. Fetch proper local city name (Reverse Geocoding)
+      // Standard openweather weather endpoint defaults to broad administrative zones in India (like "Konkan Division"). 
+      // The Geo API correctly identifies the actual city/neighborhood!
+      try {
+        const geoRes = await fetch(
+          `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`
+        );
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (geoData && geoData.length > 0 && geoData[0].name) {
+            currentData.name = geoData[0].name; // Overwrite the broad region name!
+          }
+        }
+      } catch (e) {
+        console.warn('Silent failure on reverse geocode', e);
+      }
+
       setWeatherData(currentData);
-      setSearchTerm(currentData.name); // Update search term to current city
+      setSearchTerm(currentData.name); // Update search term to current precise city
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
-      // Fetch 5-Day Forecast by Coords
+      // 3. Fetch 5-Day Forecast by Coords
       const forecastRes = await fetch(
         `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
       );
@@ -519,6 +537,7 @@ const Dashboard = () => {
                   }
                 }}
                 API_KEY={API_KEY}
+                value={searchTerm}
               />
               <button 
                 onClick={handleLocateMe}

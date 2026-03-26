@@ -12,6 +12,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
 
 const SidebarItem = ({ icon: Icon, label, active = false, to = '#', onClick }) => (
   <Link 
@@ -225,7 +226,7 @@ const SearchResults = () => {
         if (lastSavedCity.current !== city) {
           lastSavedCity.current = city; // Mark immediately to prevent race conditions in Strict Mode
           try {
-            await fetch('http://127.0.0.1:5000/save', {
+            await fetch(`${API_BASE_URL}/save`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

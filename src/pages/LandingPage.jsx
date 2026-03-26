@@ -6,6 +6,12 @@ import { Wind, ShieldCheck, Globe, Activity, ArrowRight } from 'lucide-react';
 const LandingPage = () => {
   const navigate = useNavigate();
 
+  const handleAuthNavigation = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userProfile');
+    navigate('/login');
+  };
+
   return (
     <div className="landing-page-container" style={{
       background: 'radial-gradient(circle at top, #1a1a2e 0%, #02040a 60%)',
@@ -28,7 +34,7 @@ const LandingPage = () => {
         <div style={{ fontWeight: '700', fontSize: '1.5rem', fontFamily: 'Outfit' }}>Atmos</div>
         <div style={{ display: 'flex', gap: '1.5rem' }}>
           <button 
-            onClick={() => navigate('/login')}
+            onClick={handleAuthNavigation}
             style={{ 
               background: 'transparent', 
               color: 'white', 
@@ -40,7 +46,7 @@ const LandingPage = () => {
             Login
           </button>
           <button 
-            onClick={() => navigate('/login')}
+            onClick={handleAuthNavigation}
             style={{ 
               background: 'linear-gradient(135deg, #a78bfa, #3b82f6)',
               border: 'none',
@@ -113,13 +119,13 @@ const LandingPage = () => {
 
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
           <button 
-            onClick={() => navigate('/login')}
+            onClick={handleAuthNavigation}
             className="btn-primary"
           >
             Sign Up Now
           </button>
           <button 
-            onClick={() => navigate('/login')}
+            onClick={handleAuthNavigation}
             className="btn-secondary"
           >
             Login to Portal
