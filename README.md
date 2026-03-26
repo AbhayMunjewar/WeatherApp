@@ -1,251 +1,262 @@
-﻿#  Atmos - Weather App
+# Atmos — Full-Stack Weather Application
 
-A comprehensive, full-stack weather application built with React and Flask that provides real-time weather data, extended forecasting, weather alerts, and AI-powered contextual advice.
+A production-ready weather platform built with **React 18** and **Flask**, delivering real-time conditions, extended forecasts, air quality monitoring, and AI-powered contextual recommendations.
 
-##  Features
+> **Live Status:** Production Ready · **Last Updated:** March 2026 · **Author:** [Abhay Munjewar](https://github.com/AbhayMunjewar)
 
-### Core Weather Features
-- **Real-Time Weather Data** - Current conditions, temperature, humidity, pressure, wind speed, and visibility
-- **5-Day Forecast** - Extended weather predictions with hourly breakdowns
-- **Air Quality Monitoring** - Real-time AQI (Air Quality Index) with health recommendations
-- **Weather Alerts & Warnings** - Severe weather notifications and safety advisories
-- **Historical Weather Data** - Archive weather records for any location and date
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Scripts](#scripts)
+- [Documentation](#documentation)
+- [Known Limitations](#known-limitations)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Overview
+
+Atmos is a full-stack weather application that aggregates data from multiple weather APIs to provide a unified, responsive, and intelligent user experience. The frontend is built with React 18 and Vite, while the backend is powered by Flask with a SQLite database. The application features a glassmorphism dark UI with fluid Framer Motion animations and supports user authentication, saved preferences, and a rule-based AI assistant.
+
+---
+
+## Features
+
+### Weather Data
+- **Current Conditions** — Temperature, humidity, pressure, wind speed, visibility, dew point, and UV index
+- **5-Day Forecast** — Extended daily and hourly weather predictions
+- **Air Quality Index (AQI)** — Real-time AQI with tiered health advisories
+- **Severe Weather Alerts** — Active warnings and safety notifications
+- **Historical Archive** — Weather records for any location and date (up to 1 year via Open-Meteo)
 
 ### Search & Discovery
-- **City Search with Auto-Suggestions** - Debounced API calls with dropdown suggestions (300ms debounce)
-- **Search History** - Track previously searched locations
-- **Geolocation Support** - Automatic weather detection based on user's location
-- **Saved Queries** - Store and retrieve favorite weather lookups
+- **City Autocomplete** — Debounced search (300ms) with live dropdown suggestions
+- **Geolocation** — Automatic weather detection using the browser's Geolocation API
+- **Search History** — Persisted record of previously queried locations
+- **Saved Locations** — Bookmark and retrieve favourite cities
 
-### Interactive Features
-- **Weather AI Assistant** - Rule-based chatbot answering weather-related questions
-- **Dynamic Weather Backgrounds** - Animated gradients that change with weather conditions
-- **Health & Safety Advisories** - Real-time recommendations based on conditions
-- **Environmental Insights** - Dew point, UV index, comfort index calculations
-- **Weather Maps** - Geographical visualization of weather patterns
-- **Detailed Reports** - Comprehensive weather analysis and preparedness checklists
+### AI & Intelligence
+- **Weather Assistant** — Rule-based chatbot that answers contextual queries such as "Should I go outside?", "What should I wear?", and "Will it rain?"
+- **Health & Safety Advisories** — Dynamic recommendations generated from live conditions
+- **Comfort Index** — Composite score calculated from temperature, humidity, and wind
 
 ### User Experience
-- **Dark Theme Interface** - Eye-friendly, modern glassmorphism design
-- **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- **Smooth Animations** - Framer Motion transitions for page navigation
-- **Live Clock** - Real-time clock display in navbar
-- **Error Boundaries** - Graceful error handling with user-friendly messages
-- **Loading States** - Skeleton screens and spinners during data fetch
+- **Dynamic Backgrounds** — Animated gradients that adapt to current weather conditions
+- **Responsive Design** — Optimised for desktop, tablet, and mobile viewports
+- **Glassmorphism Dark Theme** — Modern, eye-friendly interface
+- **Framer Motion Transitions** — 60 fps page animations and UI micro-interactions
+- **Error Boundaries** — Graceful degradation with user-friendly fallback UI
+- **Skeleton Loading States** — Perceived performance improvement during API calls
+- **Live Clock** — Real-time clock rendered in the navigation bar
 
 ### Authentication & Profile
-- **User Accounts** - Sign up and login functionality
-- **Profile Management** - Personalized user settings and preferences
-- **Account Settings** - Customizable app behavior and notifications
+- **User Accounts** — Registration and login with hashed passwords
+- **Profile Management** — Personalised settings and notification preferences
+- **Saved Queries** — Persistent storage of favourite weather lookups
 
-##  Tech Stack
+---
+
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 18, React Router v6, Vite 5, Framer Motion, Lucide React, jsPDF |
-| **Backend** | Flask, Flask-CORS, SQLite, Python Requests |
-| **APIs** | OpenWeather, Open-Meteo (Geocoding, Archive, Warnings) |
-| **DevTools** | ESLint, Playwright, Git, npm |
+|---|---|
+| Frontend | React 18, React Router v6, Vite 5, Framer Motion, Lucide React, jsPDF |
+| Backend | Flask, Flask-CORS, SQLite, Python Requests |
+| External APIs | OpenWeatherMap, Open-Meteo (Geocoding, Archive, Alerts) |
+| Testing & Tooling | Playwright (E2E), ESLint, Git, npm |
 
-##  Project Structure
+---
 
-`
+## Architecture
+
+```
 weather-app/
-├── 📄 index.html, package.json, vite.config.js
-├── 📄 CONTRIBUTING.md, README.md, .env.example
+├── index.html
+├── package.json
+├── vite.config.js
 │
-├── 📁 src/
-│   ├── main.jsx, index.css, App.jsx
-│   └── 📁 pages/
-│       ├── Dashboard.jsx (main weather display)
-│       ├── AlertsPage.jsx, MapsPage.jsx
-│       ├── HistoryPage.jsx, ProfilePage.jsx
-│       ├── SettingsPage.jsx, SearchResults.jsx
-│       ├── LoginPage.jsx, LandingPage.jsx
+├── src/
+│   ├── main.jsx
+│   ├── App.jsx
+│   ├── index.css
+│   └── pages/
+│       ├── Dashboard.jsx        # Primary weather display
+│       ├── AlertsPage.jsx
+│       ├── MapsPage.jsx
+│       ├── HistoryPage.jsx
+│       ├── ProfilePage.jsx
+│       ├── SettingsPage.jsx
+│       ├── SearchResults.jsx
+│       ├── LoginPage.jsx
+│       └── LandingPage.jsx
 │
-├── 📁 docs/
+├── docs/
 │   ├── INSTALLATION.md
 │   ├── API_DOCUMENTATION.md
 │   ├── ARCHITECTURE.md
-│   └── FOLDER_STRUCTURE.md ← Full details here
+│   └── FOLDER_STRUCTURE.md
 │
-└── 📁 backend/ (separate repo)
-    ├── app.py, requirements.txt
+└── backend/
+    ├── app.py
+    ├── requirements.txt
     └── .env.example
-`
+```
 
-##  Quick Start
+Key design decisions:
+- **Debounced search** reduces unnecessary API calls and stays within free-tier rate limits
+- **Component-level error boundaries** isolate failures without crashing the full application
+- **`useMemo` and `useCallback`** prevent redundant re-renders in data-heavy components
+- **Environment-based API key management** keeps secrets out of source control
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js v16+ ([Download](https://nodejs.org/))
-- Python 3.8+ ([Download](https://www.python.org/))
-- Git ([Download](https://git-scm.com/))
 
-### Frontend Installation (2 minutes)
+| Dependency | Minimum Version |
+|---|---|
+| Node.js | v16+ |
+| Python | 3.8+ |
+| Git | Any recent version |
 
-\\\ash
-# Clone and enter directory
+### Frontend Setup
+
+```bash
+# Clone the repository
 git clone https://github.com/AbhayMunjewar/WeatherApp.git
 cd WeatherApp/weather-app
 
 # Install dependencies
 npm install
 
-# Create .env file
+# Configure environment variables
 cp .env.example .env
-# Edit .env and add VITE_OPENWEATHER_API_KEY=your_key_here
+# Add your OpenWeatherMap API key to .env:
+# VITE_OPENWEATHER_API_KEY=your_key_here
 
-# Start dev server
+# Start the development server
 npm run dev
-# Open http://localhost:5173
-\\\
+# Application available at http://localhost:5173
+```
 
-### Backend Installation (2 minutes)
+### Backend Setup
 
-\\\ash
-# Navigate to backend
+```bash
+# Navigate to the backend directory
 cd backend
 
-# Create virtual environment
+# Create and activate a virtual environment
 python -m venv venv
 venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+source venv/bin/activate     # macOS / Linux
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Create .env file
+# Configure environment variables
 echo OPENWEATHER_API_KEY=your_key_here > .env
 
-# Run Flask server
+# Start the Flask server
 python app.py
-# Server at http://localhost:5000
-\\\
-
-##  Build & Deploy
-
-\\\ash
-# Development with HMR
-npm run dev
-
-# Production build
-npm run build
-
-# Preview production
-npm run preview
-
-# Quality check
-npm run lint
-
-# Run tests
-npm run test
-\\\
-
-##  Documentation
-
-| Document | Description |
-|----------|-------------|
-| [Installation Guide](./docs/INSTALLATION.md) | Detailed setup instructions |
-| [API Documentation](./docs/API_DOCUMENTATION.md) | Backend endpoints reference |
-| [Architecture Guide](./docs/ARCHITECTURE.md) | System design & patterns |
-| [Troubleshooting](./docs/TROUBLESHOOTING.md) | Common issues & solutions |
-
-##  Key Features Explained
-
-### Weather AI Assistant
-The **WeatherAIQuestionBox** component uses rule-based logic to answer weather questions:
-- Questions like "Should I go outside?" generate contextual advice
-- "What should I wear?" provides outfit recommendations
-- "Will it rain?" checks forecast data
-- All responses consider current temperature, humidity, wind, precipitation
-
-### Dynamic Weather Backgrounds
-The **WeatherBackground** component renders gradients based on conditions:
--  Clear: Blue gradient
--  Cloudy: Gray gradient  
--  Rainy: Dark blue gradient
--  Snowy: White/light blue gradient
-
-### Error Handling
-**ErrorBoundary** component catches React errors and displays gracefully without crashing the entire app.
-
-##  Security
-
--  Password hashing for user accounts
--  CORS protection on API endpoints
--  Environment-based API key management
--  Input sanitization and validation
--  Secure error messages (no sensitive data in logs)
-
-##  Performance
-
--  Vite for ultra-fast development builds
--  Framer Motion for smooth 60fps animations
--  Debounced search (300ms) to reduce API calls
--  Memoized computations with useMemo
--  Code splitting for faster load times
--  Optimized re-renders with useCallback
-
-##  Known Issues & Limitations
-
-| Issue | Status | Workaround |
-|-------|--------|-----------|
-| Air quality unavailable for some regions | Known | Try nearby major cities |
-| Historical data limited to 1 year | By API | Use Open-Meteo's free tier limits |
-| Real-time alerts occasional delay | Known | Refresh page manually |
-
-See [Troubleshooting Guide](./docs/TROUBLESHOOTING.md) for more.
-
-##  Roadmap
-
-- [x] Core weather display
-- [x] Real-time forecasts
-- [x] Air quality tracking
-- [x] Weather alerts
-- [x] User authentication
-- [ ] Mobile app (React Native)
-- [ ] Push notifications
-- [ ] Dark/Light theme toggle
-- [ ] Multi-language support
-- [ ] Advanced weather maps
-
-##  Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for:
-- Code of Conduct
-- Contribution Process
-- Pull Request Guidelines
-- Development Setup
-
-##  License
-
-MIT License  2026 - see [LICENSE](./LICENSE) for details
-
-##  Author
-
-**Abhay Munjewar**
-- GitHub: [@AbhayMunjewar](https://github.com/AbhayMunjewar)
-- Project: [WeatherApp](https://github.com/AbhayMunjewar/WeatherApp)
-
-##  Support
-
--  [Report Bugs](https://github.com/AbhayMunjewar/WeatherApp/issues)
--  [Ask Questions](https://github.com/AbhayMunjewar/WeatherApp/discussions)
--  [Read Docs](./docs)
--  [Get Help](./src/pages/SupportPage.jsx)
-
-##  Acknowledgments
-
-- OpenWeather for reliable weather data
-- Open-Meteo for free APIs
-- Framer for incredible animation library
-- Lucide for beautiful icons
-- React community for amazing ecosystem
+# API available at http://localhost:5000
+```
 
 ---
 
-**Status**:  **Production Ready**
-**Last Updated**: March 2026
-**Contributors**: 1+
+## Scripts
 
-Made with  for weather enthusiasts everywhere
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server with Hot Module Replacement |
+| `npm run build` | Compile production bundle |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Run ESLint across the codebase |
+| `npm run test` | Run Playwright end-to-end tests |
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [Installation Guide](./docs/INSTALLATION.md) | Detailed environment setup and configuration |
+| [API Documentation](./docs/API_DOCUMENTATION.md) | Backend endpoint reference with request/response schemas |
+| [Architecture Guide](./docs/ARCHITECTURE.md) | System design, data flow, and component patterns |
+| [Troubleshooting](./docs/TROUBLESHOOTING.md) | Common issues and solutions |
+| [Folder Structure](./docs/FOLDER_STRUCTURE.md) | Annotated directory layout |
+
+---
+
+## Security
+
+- Passwords stored using a secure hashing algorithm
+- CORS configured to restrict cross-origin requests
+- API keys loaded exclusively from environment variables
+- User input is sanitised and validated on both client and server
+- Error responses are sanitised to avoid leaking sensitive internals
+
+---
+
+## Performance
+
+- **Vite** for near-instant HMR and optimised production bundles
+- **Code splitting** via React lazy loading for faster initial load
+- **Debounced API calls** (300ms) to reduce unnecessary network requests
+- **`useMemo` / `useCallback`** to prevent redundant re-renders
+- **Framer Motion** hardware-accelerated animations targeting 60 fps
+
+---
+
+## Known Limitations
+
+| Issue | Status | Workaround |
+|---|---|---|
+| Air quality data unavailable in some regions | Known | Query a nearby major city |
+| Historical data capped at 1 year | API limit (Open-Meteo free tier) | No workaround on free tier |
+| Occasional delay in real-time alerts | Known | Refresh the page manually |
+
+---
+
+## Roadmap
+
+- [x] Core weather display and current conditions
+- [x] 5-day extended forecast
+- [x] Air quality monitoring
+- [x] Severe weather alerts
+- [x] User authentication and profile management
+- [ ] React Native mobile application
+- [ ] Push notifications for severe weather
+- [ ] Dark / Light theme toggle
+- [ ] Multi-language support
+- [ ] Advanced interactive weather maps
+
+---
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. It covers the code of conduct, branching strategy, commit message conventions, and review process.
+
+---
+
+## License
+
+MIT License © 2026 Abhay Munjewar. See [LICENSE](./LICENSE) for full terms.
+
+---
+
+## Acknowledgements
+
+- [OpenWeatherMap](https://openweathermap.org/) — Primary weather data provider
+- [Open-Meteo](https://open-meteo.com/) — Geocoding, historical data, and alerts
+- [Framer Motion](https://www.framer.com/motion/) — Animation library
+- [Lucide](https://lucide.dev/) — Icon set
+- [React](https://react.dev/) — UI framework
