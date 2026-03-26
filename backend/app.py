@@ -2,13 +2,15 @@ import os
 import json
 import csv
 import io
-import sqlite3
 import requests
 from flask import Flask, request, jsonify, g, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
+from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
 # Load environment variables
 load_dotenv()
@@ -18,7 +20,7 @@ CORS(app)  # Enable CORS for the frontend
 
 # Configure Environment Variables
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "your_api_key_here")
-DATABASE = 'weather.db'
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/weather_db")
 MAX_DATE_RANGE_DAYS = 31
 GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -33,62 +35,15 @@ DEFAULT_LOCATION_FALLBACKS = {
 }
 LOCATION_CACHE = {}
 
-def get_db():
-    """Get a connection to the SQLite database."""
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row  # Returns dict-like rows
-    return db
+# MongoDB Initialization
+client = MongoClient(MONGO_URI)
+# Get the default database (or specify 'weather_db' if running locally)
+db = client.get_database() if client.get_default_database().name else client['weather_db']
 
-@app.teardown_appcontext
-def close_connection(exception):
-    """Close the connection after each request."""
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
-
-def init_db():
-    """Initialize the database with the required table."""
-    with app.app_context():
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS weather_records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                city TEXT NOT NULL,
-                temperature REAL NOT NULL,
-                description TEXT,
-                date TEXT NOT NULL
-            )
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS weather_queries (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                input_location TEXT NOT NULL,
-                resolved_name TEXT NOT NULL,
-                latitude REAL NOT NULL,
-                longitude REAL NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                results_json TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )
-        ''')
-        db.commit()
-
-# Initialize the database on startup
-init_db()
+try:
+    db.users.create_index("email", unique=True)
+except Exception as e:
+    print("Warning: could not create unique index on users.email", e)
 
 def parse_iso_date(date_str):
     try:
@@ -140,26 +95,21 @@ def resolve_location(location):
         raise err
 
 def fetch_cached_location(cache_key):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute(
-        """
-        SELECT resolved_name, latitude, longitude, '' as country
-        FROM weather_queries
-        WHERE lower(input_location) = ? OR lower(resolved_name) = ?
-        ORDER BY id DESC
-        LIMIT 1
-        """,
-        (cache_key, cache_key)
+    # Search for cached query using a case-insensitive regex
+    doc = db.weather_queries.find_one(
+        {"$or": [
+            {"input_location": {"$regex": f"^{cache_key}$", "$options": "i"}},
+            {"resolved_name": {"$regex": f"^{cache_key}$", "$options": "i"}}
+        ]},
+        sort=[("_id", -1)]
     )
-    row = cursor.fetchone()
-    if not row:
+    if not doc:
         return None
     return {
-        "name": row["resolved_name"],
-        "latitude": row["latitude"],
-        "longitude": row["longitude"],
-        "country": row["country"] or None,
+        "name": doc["resolved_name"],
+        "latitude": doc["latitude"],
+        "longitude": doc["longitude"],
+        "country": doc.get("country") or None,
     }
 
 def reverse_geocode(latitude, longitude):
@@ -234,7 +184,6 @@ def fetch_weather_alerts(latitude, longitude):
     }
     response = requests.get(WARNINGS_API_URL, params=params, timeout=15)
     if response.status_code >= 400:
-        # Some regions do not have warning coverage; treat that as "no alerts"
         return []
     payload = response.json()
     entries = payload.get("warnings") or []
@@ -251,43 +200,37 @@ def fetch_weather_alerts(latitude, longitude):
         })
     return normalized
 
-def serialize_query_row(row):
+def serialize_query_row(doc):
     return {
-        "id": row["id"],
-        "input_location": row["input_location"],
-        "resolved_name": row["resolved_name"],
-        "latitude": row["latitude"],
-        "longitude": row["longitude"],
-        "start_date": row["start_date"],
-        "end_date": row["end_date"],
-        "results": json.loads(row["results_json"]),
-        "created_at": row["created_at"],
-        "updated_at": row["updated_at"],
+        "id": str(doc["_id"]),
+        "input_location": doc["input_location"],
+        "resolved_name": doc["resolved_name"],
+        "latitude": doc["latitude"],
+        "longitude": doc["longitude"],
+        "start_date": doc["start_date"],
+        "end_date": doc["end_date"],
+        "results": doc.get("results") or json.loads(doc.get("results_json", "[]")),
+        "created_at": doc["created_at"],
+        "updated_at": doc["updated_at"],
     }
 
 def load_all_query_rows():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM weather_queries ORDER BY id DESC")
-    return cursor.fetchall()
+    return list(db.weather_queries.find().sort("_id", -1))
 
 def get_user_by_email(email):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email.lower(),))
-    return cursor.fetchone()
+    return db.users.find_one({"email": email.lower()})
 
-def serialize_user(row):
+def serialize_user(doc):
     return {
-        "id": row["id"],
-        "name": row["name"],
-        "email": row["email"],
-        "created_at": row["created_at"],
+        "id": str(doc["_id"]),
+        "name": doc["name"],
+        "email": doc["email"],
+        "created_at": doc["created_at"],
     }
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Weather Backend API is running with SQLite!"})
+    return jsonify({"message": "Weather Backend API is running with MongoDB Atlas!"})
 
 # 1. GET /weather/{city} -> Fetch from OpenWeather API
 @app.route("/weather/<city>", methods=["GET"])
@@ -330,7 +273,6 @@ def get_weather_alerts():
         longitude = None
 
         if latitude_param or longitude_param:
-            # Require both coordinates and ensure they can be cast to floats
             if not (latitude_param and longitude_param):
                 return jsonify({"error": "Both latitude and longitude are required."}), 400
             try:
@@ -380,33 +322,23 @@ def create_weather_query():
         validated_start, validated_end = validate_date_range(start_date, end_date)
         resolved = resolve_location(location)
         temps = fetch_temperature_series(resolved["latitude"], resolved["longitude"], validated_start, validated_end)
-
-        db = get_db()
-        cursor = db.cursor()
         timestamp = datetime.now(timezone.utc).isoformat()
-        cursor.execute(
-            """
-            INSERT INTO weather_queries (
-                input_location, resolved_name, latitude, longitude,
-                start_date, end_date, results_json, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                location,
-                resolved["name"],
-                resolved["latitude"],
-                resolved["longitude"],
-                validated_start,
-                validated_end,
-                json.dumps(temps),
-                timestamp,
-                timestamp,
-            ),
-        )
-        db.commit()
-        cursor.execute("SELECT * FROM weather_queries WHERE id = ?", (cursor.lastrowid,))
-        row = cursor.fetchone()
-        return jsonify(serialize_query_row(row)), 201
+
+        doc = {
+            "input_location": location,
+            "resolved_name": resolved["name"],
+            "latitude": resolved["latitude"],
+            "longitude": resolved["longitude"],
+            "start_date": validated_start,
+            "end_date": validated_end,
+            "results": temps,
+            "created_at": timestamp,
+            "updated_at": timestamp
+        }
+
+        res = db.weather_queries.insert_one(doc)
+        doc["_id"] = res.inserted_id
+        return jsonify(serialize_query_row(doc)), 201
 
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
@@ -478,33 +410,31 @@ def export_weather_queries():
     except Exception as err:
         return jsonify({"error": "Failed to export weather queries.", "details": str(err)}), 500
 
-@app.route("/queries/<int:query_id>", methods=["GET"])
+@app.route("/queries/<query_id>", methods=["GET"])
 def get_weather_query(query_id):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM weather_queries WHERE id = ?", (query_id,))
-    row = cursor.fetchone()
-    if not row:
-        return jsonify({"error": "Query not found."}), 404
-    return jsonify(serialize_query_row(row)), 200
+    try:
+        doc = db.weather_queries.find_one({"_id": ObjectId(query_id)})
+        if not doc:
+            return jsonify({"error": "Query not found."}), 404
+        return jsonify(serialize_query_row(doc)), 200
+    except Exception as e:
+        return jsonify({"error": "Invalid ID format or query not found.", "details": str(e)}), 400
 
-@app.route("/queries/<int:query_id>", methods=["PUT"])
+@app.route("/queries/<query_id>", methods=["PUT"])
 def update_weather_query(query_id):
     try:
         payload = request.json or {}
         if not payload:
             return jsonify({"error": "No data supplied for update."}), 400
 
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM weather_queries WHERE id = ?", (query_id,))
-        existing = cursor.fetchone()
+        existing = db.weather_queries.find_one({"_id": ObjectId(query_id)})
         if not existing:
             return jsonify({"error": "Query not found."}), 404
 
         location = (payload.get("location") or existing["input_location"]).strip()
         start_date = payload.get("start_date") or existing["start_date"]
         end_date = payload.get("end_date") or existing["end_date"]
+        
         if not location:
             return jsonify({"error": "Location cannot be empty."}), 400
 
@@ -513,28 +443,20 @@ def update_weather_query(query_id):
         temps = fetch_temperature_series(resolved["latitude"], resolved["longitude"], validated_start, validated_end)
 
         timestamp = datetime.now(timezone.utc).isoformat()
-        cursor.execute(
-            """
-            UPDATE weather_queries
-            SET input_location = ?, resolved_name = ?, latitude = ?, longitude = ?,
-                start_date = ?, end_date = ?, results_json = ?, updated_at = ?
-            WHERE id = ?
-            """,
-            (
-                location,
-                resolved["name"],
-                resolved["latitude"],
-                resolved["longitude"],
-                validated_start,
-                validated_end,
-                json.dumps(temps),
-                timestamp,
-                query_id,
-            ),
-        )
-        db.commit()
-        cursor.execute("SELECT * FROM weather_queries WHERE id = ?", (query_id,))
-        updated = cursor.fetchone()
+        
+        updates = {
+            "input_location": location,
+            "resolved_name": resolved["name"],
+            "latitude": resolved["latitude"],
+            "longitude": resolved["longitude"],
+            "start_date": validated_start,
+            "end_date": validated_end,
+            "results": temps,
+            "updated_at": timestamp
+        }
+        
+        db.weather_queries.update_one({"_id": ObjectId(query_id)}, {"$set": updates})
+        updated = db.weather_queries.find_one({"_id": ObjectId(query_id)})
         return jsonify(serialize_query_row(updated)), 200
 
     except ValueError as err:
@@ -544,14 +466,11 @@ def update_weather_query(query_id):
     except Exception as err:
         return jsonify({"error": "Failed to update query.", "details": str(err)}), 500
 
-@app.route("/queries/<int:query_id>", methods=["DELETE"])
+@app.route("/queries/<query_id>", methods=["DELETE"])
 def delete_weather_query(query_id):
     try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("DELETE FROM weather_queries WHERE id = ?", (query_id,))
-        db.commit()
-        if cursor.rowcount == 0:
+        res = db.weather_queries.delete_one({"_id": ObjectId(query_id)})
+        if res.deleted_count == 0:
             return jsonify({"error": "Query not found."}), 404
         return jsonify({"message": "Query deleted successfully."}), 200
     except Exception as err:
@@ -576,18 +495,19 @@ def signup():
         password_hash = generate_password_hash(password)
         timestamp = datetime.now(timezone.utc).isoformat()
 
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-            (name, email, password_hash, timestamp)
-        )
-        db.commit()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (cursor.lastrowid,))
-        row = cursor.fetchone()
+        doc = {
+            "name": name,
+            "email": email,
+            "password_hash": password_hash,
+            "created_at": timestamp
+        }
+        
+        res = db.users.insert_one(doc)
+        doc["_id"] = res.inserted_id
+        
         return jsonify({
             "message": "Account created successfully.",
-            "user": serialize_user(row)
+            "user": serialize_user(doc)
         }), 201
     except Exception as err:
         return jsonify({"error": "Failed to create account.", "details": str(err)}), 500
@@ -602,13 +522,13 @@ def login():
         if not email or not password:
             return jsonify({"error": "Email and password are required."}), 400
 
-        row = get_user_by_email(email)
-        if not row or not check_password_hash(row["password_hash"], password):
+        doc = get_user_by_email(email)
+        if not doc or not check_password_hash(doc["password_hash"], password):
             return jsonify({"error": "Invalid email or password."}), 401
 
         return jsonify({
             "message": "Login successful.",
-            "user": serialize_user(row)
+            "user": serialize_user(doc)
         }), 200
     except Exception as err:
         return jsonify({"error": "Failed to login.", "details": str(err)}), 500
@@ -626,17 +546,18 @@ def save_weather():
         description = data.get("description", "No description provided")
         date_str = data.get("date", datetime.now(timezone.utc).isoformat())
         
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO weather_records (city, temperature, description, date) VALUES (?, ?, ?, ?)",
-            (city, temperature, description, date_str)
-        )
-        db.commit()
+        doc = {
+            "city": city,
+            "temperature": temperature,
+            "description": description,
+            "date": date_str
+        }
+        
+        res = db.weather_records.insert_one(doc)
         
         # Use _id to match MongoDB's style for seamless frontend compatibility
         record = {
-            "_id": cursor.lastrowid, 
+            "_id": str(res.inserted_id), 
             "city": city,
             "temperature": temperature,
             "description": description,
@@ -652,19 +573,17 @@ def save_weather():
 @app.route("/records", methods=["GET"])
 def get_records():
     try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM weather_records ORDER BY id DESC")
-        rows = cursor.fetchall()
+        # Retrieve records ordered by '_id' descending (which usually matches creation time)
+        rows = list(db.weather_records.find().sort("_id", -1))
         
         records = []
         for row in rows:
             records.append({
-                "_id": row["id"],  # Keep _id for frontend compatibility
+                "_id": str(row["_id"]),  # Return _id as string for frontend compatibility
                 "city": row["city"],
                 "temperature": row["temperature"],
-                "description": row["description"],
-                "date": row["date"]
+                "description": row.get("description"),
+                "date": row.get("date")
             })
             
         return jsonify({"count": len(records), "records": records}), 200
@@ -673,36 +592,24 @@ def get_records():
         return jsonify({"error": "Failed to fetch records.", "details": str(e)}), 500
 
 # 4. PUT /update/{id} -> Update
-@app.route("/update/<int:record_id>", methods=["PUT"])
+@app.route("/update/<record_id>", methods=["PUT"])
 def update_record(record_id):
     try:
         data = request.json
         if not data:
              return jsonify({"error": "No data provided for update."}), 400
 
-        update_fields = []
-        update_values = []
-        
-        # Determine which fields are being updated
+        updates = {}
         for key in ["city", "temperature", "description", "date"]:
             if key in data:
-                update_fields.append(f"{key} = ?")
-                update_values.append(data[key])
+                updates[key] = data[key]
                 
-        if not update_fields:
+        if not updates:
             return jsonify({"error": "No valid fields to update."}), 400
             
-        update_values.append(record_id)
+        res = db.weather_records.update_one({"_id": ObjectId(record_id)}, {"$set": updates})
         
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            f"UPDATE weather_records SET {', '.join(update_fields)} WHERE id = ?",
-            tuple(update_values)
-        )
-        db.commit()
-
-        if cursor.rowcount == 0:
+        if res.matched_count == 0:
             return jsonify({"error": "Record not found."}), 404
 
         return jsonify({"message": "Record updated successfully."}), 200
@@ -711,15 +618,12 @@ def update_record(record_id):
         return jsonify({"error": "Failed to update record.", "details": str(e)}), 500
 
 # 5. DELETE /delete/{id} -> Delete
-@app.route("/delete/<int:record_id>", methods=["DELETE"])
+@app.route("/delete/<record_id>", methods=["DELETE"])
 def delete_record(record_id):
     try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("DELETE FROM weather_records WHERE id = ?", (record_id,))
-        db.commit()
+        res = db.weather_records.delete_one({"_id": ObjectId(record_id)})
         
-        if cursor.rowcount == 0:
+        if res.deleted_count == 0:
             return jsonify({"error": "Record not found."}), 404
 
         return jsonify({"message": "Record deleted successfully."}), 200
