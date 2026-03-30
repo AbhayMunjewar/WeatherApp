@@ -164,6 +164,26 @@ const Dashboard = () => {
     return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const saveToHistory = async (weatherDataObj) => {
+    try {
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000').replace(/\/$/, "");
+      await fetch(`${API_BASE_URL}/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          city: weatherDataObj.name,
+          temperature: weatherDataObj.main.temp,
+          description: weatherDataObj.weather[0].description,
+          date: new Date().toISOString()
+        })
+      });
+    } catch (e) {
+      console.warn("Could not save to search history:", e);
+    }
+  };
+
   const fetchWeatherData = async (city) => {
     setLoading(true);
     setError(null);
@@ -181,8 +201,8 @@ const Dashboard = () => {
       setWeatherData(currentData);
       setSearchTerm(currentData.name || city);
       
-      await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
-
+      // Save valid searches to history
+      saveToHistory(currentData);
       // Fetch 5-Day Forecast
       const forecastRes = await fetch(
         `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`
@@ -242,6 +262,10 @@ const Dashboard = () => {
 
       setWeatherData(currentData);
       setSearchTerm(currentData.name); // Update search term to current precise city
+      
+      // Save valid location searches to history
+      saveToHistory(currentData);
+      
       await loadAirQuality(currentData.coord?.lat, currentData.coord?.lon);
 
       // 3. Fetch 5-Day Forecast by Coords
@@ -281,7 +305,8 @@ const Dashboard = () => {
           setError("Location access denied or unavailable. Please search manually.");
           setLoading(false);
           // Fallback if needed, e.g., fetchWeatherData('London');
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       setError("Geolocation is not supported by your browser.");
@@ -299,34 +324,42 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Attempt high-accuracy IP Geolocation primarily, to avoid locking to ISP data hubs (e.g. Mumbai)
-    fetch("https://ipapi.co/json/")
-      .then(res => res.json())
-      .then(data => {
-         if (data && data.latitude && data.longitude) {
-            fetchWeatherByCoords(data.latitude, data.longitude); // Coordinates never 404 on OpenWeather!
-         } else if (data && data.city) {
-            fetchWeatherData(data.city); 
-         } else {
-            throw new Error("IP Geolocation failed to identify city");
-         }
-      })
-      .catch(err => {
-         console.warn("IP tracking failed, falling back to browser geolocation", err);
-         if ('geolocation' in navigator) {
-           navigator.geolocation.getCurrentPosition(
-             (position) => {
-               fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
-             },
-             (geoError) => {
-               setError("Unable to determine location automatically. Please search for your city above.");
-             },
-             { timeout: 8000, maximumAge: 300000 }
-           );
-         } else {
+    // Attempt browser geolocation first for accurate positioning
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+        },
+        (geoError) => {
+          console.warn("Browser geolocation failed or denied, falling back to IP geolocation", geoError);
+          fetchIpGeolocation();
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      fetchIpGeolocation();
+    }
+
+    function fetchIpGeolocation() {
+      fetch("https://get.geojs.io/v1/ip/geo.json")
+        .then(res => {
+           if (!res.ok) throw new Error("IP geolocation service failed");
+           return res.json();
+        })
+        .then(data => {
+           if (data && data.latitude && data.longitude) {
+              fetchWeatherByCoords(data.latitude, data.longitude);
+           } else if (data && data.city) {
+              fetchWeatherData(data.city); 
+           } else {
+              throw new Error("IP Geolocation failed to identify city");
+           }
+        })
+        .catch(err => {
+           console.error("Both browser and IP geolocation failed", err);
            setError("Unable to determine location automatically. Please search for your city above.");
-         }
-      });
+        });
+    }
   }, []);
 
   useEffect(() => {
