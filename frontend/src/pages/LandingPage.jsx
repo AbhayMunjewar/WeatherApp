@@ -7,8 +7,8 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const handleAuthNavigation = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userProfile');
+    // We shouldn't clear authentication state when navigating to login
+    // If the user is already authenticated, the router will handle redirecting them to dashboard
     navigate('/login');
   };
 
