@@ -37,8 +37,10 @@ LOCATION_CACHE = {}
 
 # MongoDB Initialization
 client = MongoClient(MONGO_URI)
-# Get the default database (or specify 'weather_db' if running locally)
-db = client.get_database() if client.get_default_database().name else client['weather_db']
+try:
+    db = client.get_default_database()
+except Exception:
+    db = client['weather_db']
 
 try:
     db.users.create_index("email", unique=True)
