@@ -575,10 +575,14 @@ const Dashboard = () => {
             <div style={{ display: 'flex', gap: '0.5rem', width: '100%', maxWidth: '800px', alignItems: 'center' }}>
               <CitySearchWithSuggestions 
                 onCitySelect={(cityName, lat, lon) => {
-                  const query = (typeof lat === 'number' && typeof lon === 'number')
-                    ? `${lat},${lon}`
-                    : cityName;
-                  navigate(`/search?city=${encodeURIComponent(query)}`);
+                  // Called with (cityName, lat, lon) from suggestions or (cityName) from manual entry
+                  if (typeof lat === 'number' && typeof lon === 'number') {
+                    // Suggestion selected with coordinates
+                    fetchWeatherByCoords(lat, lon);
+                  } else {
+                    // Manual city name entered or suggestion without coords
+                    fetchWeatherData(cityName);
+                  }
                 }}
                 API_KEY={API_KEY}
                 value={searchTerm}
