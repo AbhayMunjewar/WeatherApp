@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import jsPDF from 'jspdf';
 import { 
   LayoutDashboard, History as HistoryIcon, PieChart, HelpCircle, 
   Search, MapPin, Settings, Bell, Wind, Droplets, User,
   ArrowUp, ArrowDown, Eye, Umbrella, Sun, ShieldCheck,
   ChevronRight, Compass, Cloud, CloudRain, CloudLightning, Loader2,
-  Locate, Activity, LogOut, AlertTriangle, X, Thermometer, CheckCircle2
+  Locate, Activity, LogOut, AlertTriangle, X, Thermometer, CheckCircle2, Download
 } from 'lucide-react';
 import CitySearchWithSuggestions from '../components/CitySearchWithSuggestions';
 import WeatherBackground from '../components/WeatherBackground';
 import WeatherAIQuestionBox from '../components/WeatherAIQuestionBox';
 import { WeatherSkeleton, LoadingSpinner } from '../components/LoadingStates';
+import LocationMap from '../components/LocationMap';
+import YouTubeVideos from '../components/YouTubeVideos';
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
@@ -184,28 +187,46 @@ const Dashboard = () => {
     }
   };
 
+  // Clean city name by stripping common suffixes that geocoding APIs add
+  // but OpenWeatherMap doesn't recognize (e.g. "Nagpur City" → "Nagpur")
+  const cleanCityName = (name) => {
+    const suffixes = /\s+(City|Town|District|Municipality|Metropolitan|Corporation|Village|County|Urban|Rural|Tehsil|Taluka|Division)$/i;
+    return name.replace(suffixes, '').trim();
+  };
+
   const fetchWeatherData = async (city) => {
     setLoading(true);
     setError(null);
     setSelectedDayIndex(null);
     setAirQuality(null);
     try {
-      // Fetch Current Weather
-      const currentRes = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+      // Fetch Current Weather — retry with cleaned name if 404
+      let currentRes = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
       );
+      let usedCity = city;
+      if (!currentRes.ok) {
+        const cleaned = cleanCityName(city);
+        if (cleaned !== city) {
+          console.log(`Retrying weather with cleaned name: "${cleaned}" (was "${city}")`);
+          currentRes = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cleaned)}&appid=${API_KEY}&units=metric`
+          );
+          usedCity = cleaned;
+        }
+      }
       if (!currentRes.ok) {
         throw new Error(`We couldn't find "${city}". Try a nearby city or check the spelling.`);
       }
       const currentData = await currentRes.json();
       setWeatherData(currentData);
-      setSearchTerm(currentData.name || city);
+      setSearchTerm(currentData.name || usedCity);
       
       // Save valid searches to history
       saveToHistory(currentData);
       // Fetch 5-Day Forecast
       const forecastRes = await fetch(
-        `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`
+        `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(currentData.name || usedCity)}&appid=${API_KEY}&units=metric`
       );
       if (!forecastRes.ok) {
         throw new Error('Unable to load the extended forecast right now. Please try again in a moment.');
@@ -239,7 +260,10 @@ const Dashboard = () => {
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
       );
       if (!currentRes.ok) {
-        throw new Error('We could not load weather for your current location. Please search manually.');
+        const errBody = await currentRes.json().catch(() => ({}));
+        const errMsg = errBody.message || 'Unknown error';
+        console.error('OpenWeather coordinates call failed:', currentRes.status, errBody);
+        throw new Error(`We could not load weather for your current location (${errMsg}). Please search manually.`);
       }
       const currentData = await currentRes.json();
 
@@ -392,6 +416,107 @@ const Dashboard = () => {
       fetchWeatherData(searchCity);
     }
   };
+
+  const handleExportPdf = useCallback(() => {
+    if (!weatherData) {
+      alert('Search for a location first to export its forecast.');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const today = new Date();
+      let cursorY = 20;
+      const safeName = weatherData.name || 'forecast';
+
+      const bullet = (label, value) => {
+        doc.text(`${label}: ${value}`, 20, cursorY);
+        cursorY += 8;
+      };
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.text(`Atmos Lens — ${safeName}`, 20, cursorY);
+      cursorY += 10;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      bullet('Generated', today.toLocaleString());
+      bullet('Coordinates', weatherData?.coord ? `${weatherData.coord.lat.toFixed(2)}, ${weatherData.coord.lon.toFixed(2)}` : 'N/A');
+      bullet('Current Temp', `${Math.round(weatherData.main.temp)} °C (feels like ${Math.round(weatherData.main.feels_like)} °C)`);
+      bullet('Conditions', `${weatherData.weather[0].main} — ${weatherData.weather[0].description}`);
+      bullet('Humidity', `${weatherData.main.humidity}%`);
+      bullet('Wind', `${weatherData.wind.speed} km/h`);
+      
+      const currentAqi = airQuality?.list?.[0]?.main?.aqi || 0;
+      if (currentAqi) {
+        const getAqiDisplay = (val) => {
+          switch(val) {
+            case 1: return 'Good';
+            case 2: return 'Fair';
+            case 3: return 'Moderate';
+            case 4: return 'Poor';
+            case 5: return 'Hazardous';
+            default: return 'Unknown';
+          }
+        };
+        bullet('Air Quality', getAqiDisplay(currentAqi));
+      }
+
+      cursorY += 4;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Five-Day Outlook', 20, cursorY);
+      cursorY += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+
+      const entries = forecastData.length ? forecastData.slice(0, 5) : [];
+      if (!entries.length) {
+        bullet('Notice', 'Forecast data is still loading. Try exporting again in a moment.');
+      } else {
+        entries.forEach((item, index) => {
+          if (cursorY > 270) {
+            doc.addPage();
+            cursorY = 20;
+          }
+          const dateLabel = new Date(item.dt * 1000).toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          });
+          const summary = `${dateLabel} · High ${Math.round(item.main.temp_max)} °C / Low ${Math.round(item.main.temp_min)} °C · ${item.weather[0].description}`;
+          doc.text(`Day ${index + 1}: ${summary}`, 20, cursorY);
+          cursorY += 8;
+        });
+      }
+
+      cursorY += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Travel Notes', 20, cursorY);
+      cursorY += 8;
+      doc.setFont('helvetica', 'normal');
+      const reminders = [
+        'Reconfirm alerts inside Atmos Lens before departure.',
+        'Use the embedded map for last-mile navigation details.',
+        'Bookmark the City Spotlight section for local highlights.'
+      ];
+      reminders.forEach((line) => {
+        if (cursorY > 270) {
+          doc.addPage();
+          cursorY = 20;
+        }
+        doc.text(`• ${line}`, 20, cursorY);
+        cursorY += 8;
+      });
+
+      const filename = `atmos-forecast-${safeName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      doc.save(filename);
+    } catch (pdfError) {
+      console.error('PDF export failed', pdfError);
+      alert('Unable to export the PDF right now. Please try again.');
+    }
+  }, [weatherData, forecastData, airQuality]);
 
   const getWeatherIcon = (condition) => {
     const main = condition.toLowerCase();
@@ -562,6 +687,22 @@ const Dashboard = () => {
 
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+             <button
+               onClick={handleExportPdf}
+               disabled={!weatherData}
+               style={{
+                 display: 'flex', alignItems: 'center', gap: '0.5rem',
+                 background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15))',
+                 border: '1px solid rgba(139,92,246,0.3)',
+                 color: '#e2e8f0', borderRadius: '8px', padding: '0.4rem 0.9rem',
+                 cursor: weatherData ? 'pointer' : 'not-allowed',
+                 opacity: weatherData ? 1 : 0.6,
+                 fontSize: '0.8rem', fontWeight: '600',
+                 transition: 'all 0.2s'
+               }}
+             >
+               <Download size={14} color="#a78bfa" /> Export Data
+             </button>
              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
              <div style={{ display: 'flex', gap: '1rem', color: '#94a3b8', alignItems: 'center' }}>
                <MapPin size={20} cursor="pointer" />
@@ -935,6 +1076,21 @@ const Dashboard = () => {
                 weatherData={displayData}
                 forecastData={forecastData}
               />
+              
+              {/* Location Map */}
+              <div style={{ marginTop: '0rem' }}>
+                <LocationMap 
+                  lat={displayData.coord.lat}
+                  lon={displayData.coord.lon}
+                  cityName={displayData.name}
+                  country={displayData?.sys?.country}
+                />
+              </div>
+
+              {/* YouTube Videos */}
+              <div style={{ marginTop: '0rem' }}>
+                <YouTubeVideos cityName={displayData.name} />
+              </div>
               </>
             )}
 

@@ -567,14 +567,33 @@ const ForecastPage = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Clean city name by stripping common suffixes that geocoding APIs add
+  // but OpenWeatherMap doesn't recognize (e.g. "Nagpur City" → "Nagpur")
+  const cleanCityName = (name) => {
+    const suffixes = /\s+(City|Town|District|Municipality|Metropolitan|Corporation|Village|County|Urban|Rural|Tehsil|Taluka|Division)$/i;
+    return name.replace(suffixes, '').trim();
+  };
+
   // Fetch forecast
   const fetchForecast = async (city) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
+      let res = await fetch(
         `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
       );
+
+      // If the original name fails, try stripping common suffixes
+      if (!res.ok) {
+        const cleaned = cleanCityName(city);
+        if (cleaned !== city) {
+          console.log(`Retrying forecast with cleaned name: "${cleaned}" (was "${city}")`);
+          res = await fetch(
+            `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(cleaned)}&appid=${API_KEY}&units=metric`
+          );
+        }
+      }
+
       if (!res.ok) throw new Error(`Couldn't find forecast for "${city}". Check the name and try again.`);
       const data = await res.json();
       if (!data.list?.length) throw new Error('No forecast data available.');

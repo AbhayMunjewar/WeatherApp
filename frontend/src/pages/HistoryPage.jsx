@@ -4,7 +4,7 @@ import {
   MapPin, Clock, Calendar, Star, ChevronRight,
   Search, CloudLightning, Globe, Zap, Navigation,
   LayoutDashboard, History, PieChart, HelpCircle, Compass, Map,
-  Thermometer, Wind, Droplets, Sun, CloudRain, LogOut, User, Trash2
+  Thermometer, Wind, Droplets, Sun, CloudRain, LogOut, User, Trash2, Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -163,6 +163,10 @@ const HistoryPage = () => {
     }
   };
 
+  const handleExportCsv = () => {
+    window.location.href = `${API_BASE_URL}/export?table=weather_records&format=csv`;
+  };
+
   const handleApplyRange = () => {
     if (rangeDraft.start && rangeDraft.end && rangeDraft.start > rangeDraft.end) {
       setStatus({ type: 'error', message: 'Start date must be on or before the end date.' });
@@ -240,6 +244,17 @@ const HistoryPage = () => {
       <main style={{ flex: 1, padding: '2rem 4rem', display: 'flex', flexDirection: 'column', gap: '2rem', overflowY: 'auto' }}>
         <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem' }}>
            <div style={{ display: 'flex', gap: '1.5rem', color: '#94a3b8', alignItems: 'center' }}>
+              <button 
+                onClick={handleExportCsv}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#e2e8f0', borderRadius: '8px', padding: '0.6rem 1rem', cursor: 'pointer',
+                  fontSize: '0.85rem', fontWeight: '600'
+                }}
+              >
+                <Download size={16} /> Export DB
+              </button>
               <div style={{ position: 'relative' }}>
                 <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
                 <input 
