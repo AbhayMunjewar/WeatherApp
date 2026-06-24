@@ -6,7 +6,7 @@ import {
   LayoutDashboard, History as HistoryIcon, PieChart, HelpCircle, 
   Search, MapPin, Settings, Bell, Wind, Droplets, User,
   ArrowUp, ArrowDown, Eye, Umbrella, Sun, ShieldCheck,
-  ChevronRight, Compass, Cloud, CloudRain, CloudLightning, Loader2,
+  ChevronRight, Compass, Cloud, CloudRain, CloudLightning, Loader2, CloudSnow,
   Locate, Activity, LogOut, AlertTriangle, X, Thermometer, CheckCircle2, Download
 } from 'lucide-react';
 import CitySearchWithSuggestions from '../components/CitySearchWithSuggestions';
@@ -155,6 +155,50 @@ const Dashboard = () => {
     if (typeof tempC !== 'number' || typeof humidityPct !== 'number') return null;
     const dew = tempC - ((100 - humidityPct) / 5);
     return Math.round(dew * 10) / 10;
+  };
+
+  const getDynamicInsights = () => {
+    if (!weatherData) {
+      return [
+        { icon: Umbrella, title: "Carry an umbrella", description: "Light showers expected. Better safe than sorry.", color: "#8b5cf6" },
+        { icon: Droplets, title: "Stay hydrated", description: "High humidity today may lead to faster dehydration.", color: "#3b82f6" },
+        { icon: Sun, title: "UV Protection", description: "UV index is moderate. Apply sunscreen.", color: "#f59e0b" }
+      ];
+    }
+    
+    const insights = [];
+    const temp = weatherData.main?.temp || 0;
+    const humidity = weatherData.main?.humidity || 0;
+    const weatherMain = (weatherData.weather?.[0]?.main || '').toLowerCase();
+    const windSpeed = weatherData.wind?.speed || 0; 
+    
+    if (weatherMain.includes('rain') || weatherMain.includes('drizzle') || weatherMain.includes('thunderstorm')) {
+      insights.push({ icon: Umbrella, title: "Carry an umbrella", description: `Current conditions indicate ${weatherMain}. Keep an umbrella handy.`, color: "#8b5cf6" });
+    } else if (weatherMain.includes('snow')) {
+      insights.push({ icon: CloudSnow, title: "Snow expected", description: "Dress warmly and be careful of slippery roads.", color: "#a78bfa" });
+    } else if (temp > 28 && weatherMain.includes('clear')) {
+      insights.push({ icon: Sun, title: "UV Protection", description: "Clear skies and high temperatures. Apply sunscreen if heading out.", color: "#f59e0b" });
+    }
+    
+    if (humidity > 65 || temp > 30) {
+      insights.push({ icon: Droplets, title: "Stay hydrated", description: temp > 30 ? "High temperatures today. Keep water close by to prevent dehydration." : "High humidity today may lead to faster dehydration. Keep water close.", color: "#3b82f6" });
+    }
+    
+    if (windSpeed > 10) {
+      insights.push({ icon: Wind, title: "Strong Winds", description: `Wind speeds are reaching ${windSpeed} m/s. Secure loose objects.`, color: "#10b981" });
+    }
+    
+    if (insights.length === 0) {
+       if (temp < 10) {
+         insights.push({ icon: Thermometer, title: "Bundle up", description: "It's quite cold out there. Dress warmly before heading out.", color: "#60a5fa" });
+       } else if (temp >= 10 && temp <= 25) {
+         insights.push({ icon: Compass, title: "Pleasant weather", description: "The weather is currently mild and pleasant. Great time for outdoor activities.", color: "#34d399" });
+       } else {
+         insights.push({ icon: Cloud, title: "Stable conditions", description: "Weather conditions are currently stable.", color: "#94a3b8" });
+       }
+    }
+    
+    return insights.slice(0, 3);
   };
 
   const formatVisibility = (value) => {
@@ -990,24 +1034,15 @@ const Dashboard = () => {
                  <Bell size={18} color="#ef4444" /> Weather Insights
                </h3>
                
-               <InsightItem 
-                 icon={Umbrella} 
-                 title="Carry an umbrella" 
-                 description="Light showers expected between 2 PM and 4 PM. Better safe than sorry."
-                 color="#8b5cf6"
-               />
-               <InsightItem 
-                 icon={Droplets} 
-                 title="Stay hydrated" 
-                 description="High humidity today may lead to faster dehydration. Keep water close."
-                 color="#3b82f6"
-               />
-               <InsightItem 
-                 icon={Sun} 
-                 title="UV Protection" 
-                 description="UV index is moderate. Apply sunscreen if heading out for long."
-                 color="#f59e0b"
-               />
+               {getDynamicInsights().map((insight, idx) => (
+                 <InsightItem 
+                   key={idx}
+                   icon={insight.icon} 
+                   title={insight.title} 
+                   description={insight.description}
+                   color={insight.color}
+                 />
+               ))}
 
                <button 
                  className="btn-secondary"
