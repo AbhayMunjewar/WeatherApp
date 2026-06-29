@@ -192,6 +192,9 @@ def validate_date_range(start_date, end_date):
         raise ValueError(f"Date range cannot exceed {MAX_DATE_RANGE_DAYS} days.")
     return start.isoformat(), end.isoformat()
 
+def format_date_value(value):
+    return value.isoformat() if hasattr(value, "isoformat") else value
+
 def resolve_location(location):
     normalized = (location or "").strip()
     if not normalized:
@@ -369,8 +372,8 @@ def serialize_query_row(row):
         "resolved_name": row["resolved_name"],
         "latitude": row["latitude"],
         "longitude": row["longitude"],
-        "start_date": row["start_date"],
-        "end_date": row["end_date"],
+        "start_date": format_date_value(row["start_date"]),
+        "end_date": format_date_value(row["end_date"]),
         "results": results,
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
