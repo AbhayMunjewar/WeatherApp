@@ -21,7 +21,12 @@ CORS(app)  # Enable CORS for the frontend
 
 # Configure Environment Variables
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "your_api_key_here")
-DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weather.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
+MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_USER = os.getenv("MYSQL_USER", "root")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "weather_app")
 MAX_DATE_RANGE_DAYS = 31
 GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -36,15 +41,68 @@ DEFAULT_LOCATION_FALLBACKS = {
 }
 LOCATION_CACHE = {}
 
-# ─── SQLite Initialization ──────────────────────────────────────────────────────
+# MySQL Initialization
+
+def get_mysql_config(include_database=True):
+    """Build MySQL connector settings from DATABASE_URL or MYSQL_* variables."""
+    config = {
+        "host": MYSQL_HOST,
+        "port": MYSQL_PORT,
+        "user": MYSQL_USER,
+        "password": MYSQL_PASSWORD,
+        "charset": "utf8mb4",
+        "use_unicode": True,
+    }
+
+    if DATABASE_URL:
+        parsed = urlparse(DATABASE_URL)
+        if parsed.scheme not in {"mysql", "mysql+mysqlconnector"}:
+            raise ValueError("DATABASE_URL must use mysql:// or mysql+mysqlconnector://")
+        config.update({
+            "host": parsed.hostname or MYSQL_HOST,
+            "port": parsed.port or MYSQL_PORT,
+            "user": unquote(parsed.username or MYSQL_USER),
+            "password": unquote(parsed.password or MYSQL_PASSWORD),
+        })
+        database = parsed.path.lstrip("/") or MYSQL_DATABASE
+    else:
+        database = MYSQL_DATABASE
+
+    if include_database:
+        config["database"] = database
+    return config, database
+
+
+def connect_mysql(include_database=True):
+    config, _ = get_mysql_config(include_database=include_database)
+    return mysql.connector.connect(**config)
+
+
+def normalize_sql(sql):
+    """Convert sqlite-style placeholders to MySQL DB-API placeholders."""
+    return sql.replace("?", "%s")
+
+
+class DatabaseSession:
+    def __init__(self, connection):
+        self.connection = connection
+
+    def execute(self, sql, params=None):
+        cursor = self.connection.cursor(dictionary=True)
+        cursor.execute(normalize_sql(sql), params or ())
+        return cursor
+
+    def commit(self):
+        self.connection.commit()
+
+    def close(self):
+        self.connection.close()
+
 
 def get_db():
     """Get a database connection for the current request context."""
     if 'db' not in g:
-        g.db = sqlite3.connect(DATABASE_PATH)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA journal_mode=WAL")
-        g.db.execute("PRAGMA foreign_keys=ON")
+        g.db = DatabaseSession(connect_mysql())
     return g.db
 
 @app.teardown_appcontext
@@ -56,42 +114,56 @@ def close_db(exception):
 
 def init_db():
     """Create database tables if they don't exist."""
-    conn = sqlite3.connect(DATABASE_PATH)
+    bootstrap_conn = connect_mysql(include_database=False)
+    _, database = get_mysql_config(include_database=False)
+    bootstrap_cursor = bootstrap_conn.cursor()
+    bootstrap_cursor.execute(
+        f"CREATE DATABASE IF NOT EXISTS `{database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    )
+    bootstrap_conn.commit()
+    bootstrap_cursor.close()
+    bootstrap_conn.close()
+
+    conn = connect_mysql()
     cursor = conn.cursor()
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS weather_queries (
-            id TEXT PRIMARY KEY,
-            input_location TEXT NOT NULL,
-            resolved_name TEXT NOT NULL,
-            latitude REAL NOT NULL,
-            longitude REAL NOT NULL,
-            country TEXT,
-            start_date TEXT NOT NULL,
-            end_date TEXT NOT NULL,
-            results_json TEXT DEFAULT '[]',
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            id VARCHAR(36) PRIMARY KEY,
+            input_location VARCHAR(255) NOT NULL,
+            resolved_name VARCHAR(255) NOT NULL,
+            latitude DOUBLE NOT NULL,
+            longitude DOUBLE NOT NULL,
+            country VARCHAR(255),
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            results_json JSON NOT NULL,
+            created_at VARCHAR(40) NOT NULL,
+            updated_at VARCHAR(40) NOT NULL,
+            INDEX idx_weather_queries_created_at (created_at),
+            INDEX idx_weather_queries_input_location (input_location),
+            INDEX idx_weather_queries_resolved_name (resolved_name)
         )
     """)
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS weather_records (
-            id TEXT PRIMARY KEY,
-            city TEXT NOT NULL,
-            temperature REAL NOT NULL,
-            description TEXT DEFAULT '',
-            date TEXT NOT NULL
+            id VARCHAR(36) PRIMARY KEY,
+            city VARCHAR(255) NOT NULL,
+            temperature DOUBLE NOT NULL,
+            description TEXT,
+            date VARCHAR(40) NOT NULL,
+            INDEX idx_weather_records_date (date)
         )
     """)
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            id VARCHAR(36) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            created_at VARCHAR(40) NOT NULL
         )
     """)
 
@@ -100,7 +172,8 @@ def init_db():
 
 # Initialize the database on startup
 init_db()
-print("✅ SQLite database initialized at", DATABASE_PATH)
+_, active_database = get_mysql_config()
+print("MySQL database initialized:", active_database)
 
 # ─── Utility Functions ──────────────────────────────────────────────────────────
 
@@ -154,16 +227,15 @@ def resolve_location(location):
         raise err
 
 def fetch_cached_location(cache_key):
-    """Search for a previously-saved query matching this location in SQLite."""
+    """Search for a previously-saved query matching this location in MySQL."""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        conn = connect_mysql()
+        cursor = conn.cursor(dictionary=True)
         cursor.execute(
             """SELECT resolved_name, latitude, longitude, country
                FROM weather_queries
-               WHERE LOWER(input_location) = ? OR LOWER(resolved_name) = ?
-               ORDER BY rowid DESC LIMIT 1""",
+               WHERE LOWER(input_location) = %s OR LOWER(resolved_name) = %s
+               ORDER BY created_at DESC LIMIT 1""",
             (cache_key, cache_key)
         )
         row = cursor.fetchone()
@@ -284,9 +356,7 @@ def fetch_weather_alerts(latitude, longitude):
 # ─── Serialization helpers ──────────────────────────────────────────────────────
 
 def serialize_query_row(row):
-    """Convert a SQLite Row (or dict) for a weather_query into a JSON-friendly dict."""
-    if isinstance(row, sqlite3.Row):
-        row = dict(row)
+    """Convert a database row for a weather_query into a JSON-friendly dict."""
     results = row.get("results_json", "[]")
     if isinstance(results, str):
         try:
@@ -307,8 +377,6 @@ def serialize_query_row(row):
     }
 
 def serialize_user(row):
-    if isinstance(row, sqlite3.Row):
-        row = dict(row)
     return {
         "id": row["id"],
         "name": row["name"],
@@ -320,7 +388,7 @@ def serialize_user(row):
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Weather Backend API is running with SQLite!"})
+    return jsonify({"message": "Weather Backend API is running with MySQL!"})
 
 # 1. GET /weather/{city} -> Fetch from OpenWeather API
 @app.route("/weather/<city>", methods=["GET"])
@@ -442,7 +510,7 @@ def create_weather_query():
 def list_weather_queries():
     try:
         db = get_db()
-        rows = db.execute("SELECT * FROM weather_queries ORDER BY rowid DESC").fetchall()
+        rows = db.execute("SELECT * FROM weather_queries ORDER BY created_at DESC").fetchall()
         return jsonify({
             "count": len(rows),
             "queries": [serialize_query_row(row) for row in rows]
@@ -455,7 +523,7 @@ def export_weather_queries():
     try:
         fmt = (request.args.get("format") or "json").lower()
         db = get_db()
-        rows = db.execute("SELECT * FROM weather_queries ORDER BY rowid DESC").fetchall()
+        rows = db.execute("SELECT * FROM weather_queries ORDER BY created_at DESC").fetchall()
         payload = [serialize_query_row(row) for row in rows]
 
         if fmt == "json":
@@ -674,7 +742,7 @@ def save_weather():
 def get_records():
     try:
         db = get_db()
-        rows = db.execute("SELECT * FROM weather_records ORDER BY rowid DESC").fetchall()
+        rows = db.execute("SELECT * FROM weather_records ORDER BY date DESC").fetchall()
         
         records = []
         for row in rows:
@@ -751,7 +819,8 @@ def export_data():
             return jsonify({"error": "Invalid table."}), 400
 
         db = get_db()
-        rows = db.execute(f"SELECT * FROM {target_table} ORDER BY rowid DESC").fetchall()
+        order_column = "date" if target_table == "weather_records" else "created_at"
+        rows = db.execute(f"SELECT * FROM {target_table} ORDER BY {order_column} DESC").fetchall()
         
         if format_type == "json":
             records = [dict(row) for row in rows]
@@ -763,7 +832,7 @@ def export_data():
         if rows:
             writer.writerow(rows[0].keys())
             for row in rows:
-                writer.writerow(row)
+                writer.writerow(row.values())
         
         response = app.response_class(
             response=output.getvalue(),
