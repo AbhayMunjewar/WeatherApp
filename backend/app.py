@@ -2,8 +2,10 @@ import os
 import json
 import csv
 import io
-import sqlite3
 import uuid
+from urllib.parse import urlparse, unquote
+
+import mysql.connector
 import requests
 from flask import Flask, request, jsonify, g, Response
 from flask_cors import CORS
