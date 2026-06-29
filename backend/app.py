@@ -195,6 +195,12 @@ def validate_date_range(start_date, end_date):
 def format_date_value(value):
     return value.isoformat() if hasattr(value, "isoformat") else value
 
+def serialize_raw_row(row):
+    return {
+        key: format_date_value(value)
+        for key, value in row.items()
+    }
+
 def resolve_location(location):
     normalized = (location or "").strip()
     if not normalized:
@@ -826,7 +832,7 @@ def export_data():
         rows = db.execute(f"SELECT * FROM {target_table} ORDER BY {order_column} DESC").fetchall()
         
         if format_type == "json":
-            records = [dict(row) for row in rows]
+            records = [serialize_raw_row(row) for row in rows]
             return jsonify({"count": len(records), "data": records}), 200
         
         # Default to CSV
